@@ -34,57 +34,58 @@ const AdminSettingsPage = lazy(() => import("./admin/pages/AdminSettingsPage"));
 
 const queryClient = new QueryClient();
 
+function StoreLayout() {
+  return (
+    <>
+      <Navbar />
+      <main className="min-h-screen">
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/shop" element={<ShopPage />} />
+          <Route path="/customize" element={<CustomizePage />} />
+          <Route path="/offers" element={<OffersPage />} />
+          <Route path="/track" element={<TrackOrderPage />} />
+          <Route path="/product/:id" element={<ProductDetailPage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+      <Footer />
+    </>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CartProvider>
         <AccountProvider>
           <WishlistProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Suspense fallback={<div className="min-h-screen bg-background" aria-busy="true" />}>
-            <Routes>
-            {/* Admin routes — separate layout, no Navbar/Footer */}
-            <Route path="/admin-dashboard" element={<AdminLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="products" element={<AdminProductsPage />} />
-              <Route path="orders" element={<AdminOrdersPage />} />
-              <Route path="customers" element={<AdminCustomersPage />} />
-              <Route path="coupons" element={<AdminCouponsPage />} />
-              <Route path="payments" element={<AdminPaymentsPage />} />
-              <Route path="analytics" element={<AdminAnalyticsPage />} />
-              <Route path="settings" element={<AdminSettingsPage />} />
-            </Route>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Suspense fallback={<div className="min-h-screen bg-background" aria-busy="true" />}>
+                <Routes>
+                  {/* Admin routes — separate layout, no Navbar/Footer */}
+                  <Route path="/admin-dashboard" element={<AdminLayout />}>
+                    <Route index element={<DashboardPage />} />
+                    <Route path="products" element={<AdminProductsPage />} />
+                    <Route path="orders" element={<AdminOrdersPage />} />
+                    <Route path="customers" element={<AdminCustomersPage />} />
+                    <Route path="coupons" element={<AdminCouponsPage />} />
+                    <Route path="payments" element={<AdminPaymentsPage />} />
+                    <Route path="analytics" element={<AdminAnalyticsPage />} />
+                    <Route path="settings" element={<AdminSettingsPage />} />
+                  </Route>
 
-            {/* Store routes */}
-            <Route
-              path="*"
-              element={
-                <>
-                  <Navbar />
-                  <main className="min-h-screen">
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/shop" element={<ShopPage />} />
-                      <Route path="/customize" element={<CustomizePage />} />
-                      <Route path="/offers" element={<OffersPage />} />
-                      <Route path="/track" element={<TrackOrderPage />} />
-                      <Route path="/product/:id" element={<ProductDetailPage />} />
-                      <Route path="/cart" element={<CartPage />} />
-                      <Route path="/checkout" element={<CheckoutPage />} />
-                      <Route path="/wishlist" element={<WishlistPage />} />
-                      <Route path="/profile" element={<ProfilePage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </main>
-                  <Footer />
-                </>
-              }
-            />
-            </Routes>
-            </Suspense>
-          </BrowserRouter>
+                  {/* Store routes */}
+                  <Route path="/*" element={<StoreLayout />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
           </WishlistProvider>
         </AccountProvider>
       </CartProvider>

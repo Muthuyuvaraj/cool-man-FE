@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Heart, Eye, ShoppingBag, Star, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ const badgeColors = {
 export default function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const navigate = useNavigate();
   const liked = isWishlisted(product.id);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -217,7 +218,16 @@ export default function ProductCard({ product }: { product: Product }) {
               <div><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fabric</p><p className="mt-1 text-sm font-medium">{product.fabric}</p></div>
               <div><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available sizes</p><div className="mt-2 flex flex-wrap gap-2">{product.sizes.map((size) => <span key={size} className="rounded-lg border border-border px-3 py-1 text-xs font-semibold">{size}</span>)}</div></div>
               {!!product.colors?.length && <div><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Colors</p><p className="mt-1 text-sm font-medium">{product.colors.join(", ")}</p></div>}
-              <Link to={`/product/${product.id}`} onClick={() => setQuickViewOpen(false)} className="flex w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">View full details</Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickViewOpen(false);
+                  navigate(`/product/${product.id}`);
+                }}
+                className="flex w-full items-center justify-center rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground"
+              >
+                View full details
+              </button>
             </div>
           </div>
         </DialogContent>

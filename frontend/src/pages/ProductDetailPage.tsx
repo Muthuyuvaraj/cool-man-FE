@@ -5,6 +5,7 @@ import { Heart, ShoppingBag, Check, Star, Truck, RotateCcw, Shield, ChevronRight
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { useProducts } from "@/hooks/useProducts";
 
 const sizeGuide: Record<string, string> = {
   S: "36\" Chest, 27\" Length",
@@ -23,12 +24,18 @@ const mockReviews = [
 export default function ProductDetailPage() {
   const { addItem } = useCart();
   const { id } = useParams<{ id: string }>();
-  const product = products.find((p) => p.id === id);
+  const productsQuery = useProducts();
+  const availableProducts = productsQuery.data?.length ? productsQuery.data : products;
+  const product = availableProducts.find((item) => String(item.id) === id);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [liked, setLiked] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "reviews" | "size-guide">("description");
+
+  if (productsQuery.isLoading && !product) {
+    return <div className="container mx-auto px-4 py-20 text-center text-muted-foreground">Loading product...</div>;
+  }
 
   if (!product) {
     return (
