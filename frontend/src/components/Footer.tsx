@@ -62,10 +62,10 @@ export default function Footer() {
           to="/admin-dashboard"
           aria-label="Open admin dashboard"
           title="Open admin dashboard"
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          className="relative z-10 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md border border-primary/40 bg-background px-4 py-2 font-semibold text-foreground shadow-sm transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:w-auto"
         >
           <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>Admin</span>
+          <span>Admin Dashboard</span>
         </Link>
       </div>
     </footer>
