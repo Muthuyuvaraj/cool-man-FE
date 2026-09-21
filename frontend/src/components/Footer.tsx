@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Twitter, Facebook, Youtube } from "lucide-react";
+import { Instagram, Twitter, Facebook, Youtube, LayoutDashboard } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -56,8 +56,17 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="container mx-auto mt-10 border-t border-border px-4 pt-6 text-center text-xs text-muted-foreground">
-        © 2026 Coolman. All rights reserved.
+      <div className="container mx-auto mt-10 flex flex-col items-center justify-between gap-4 border-t border-border px-4 pt-6 text-center text-xs text-muted-foreground sm:flex-row sm:text-left">
+        <span>© 2026 Coolman. All rights reserved.</span>
+        <Link
+          to="/admin-dashboard"
+          aria-label="Open admin dashboard"
+          title="Open admin dashboard"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 font-medium text-muted-foreground transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+        >
+          <LayoutDashboard className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>Admin</span>
+        </Link>
       </div>
     </footer>
   );
