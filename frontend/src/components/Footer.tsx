@@ -4,8 +4,7 @@ import { Instagram, Twitter, Facebook, Youtube, LayoutDashboard } from "lucide-r
 export default function Footer() {
   return (
     <>
-      <Link
-        to="/admin-dashboard"
+      <Link to="/admin dashboard"
         aria-label="Open admin dashboard"
         title="Open admin dashboard"
         className="fixed bottom-4 right-4 z-50 inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-primary/40 bg-card px-4 py-2 text-xs font-bold text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:bottom-6 sm:right-6"
