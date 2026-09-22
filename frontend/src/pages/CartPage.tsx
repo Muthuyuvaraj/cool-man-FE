@@ -110,7 +110,9 @@ export default function CartPage() {
                       <span className="w-6 text-center font-display text-sm font-bold">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.product.id, item.size, item.quantity + 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-secondary"
+                        disabled={item.product.stock !== undefined && item.quantity >= item.product.stock}
+                        aria-label={item.product.stock !== undefined && item.quantity >= item.product.stock ? "Maximum available stock reached" : "Increase quantity"}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus size={14} />
                       </button>
@@ -226,6 +228,13 @@ export default function CartPage() {
           </div>
         </div>
       </div>
+                  {item.product.stock !== undefined && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {item.product.stock - item.quantity > 0
+                        ? `${item.product.stock - item.quantity} left in stock`
+                        : "Maximum available stock reached"}
+                    </p>
+                  )}
     </div>
   );
 }

@@ -173,12 +173,17 @@ export default function ProductDetailPage() {
               </button>
               <span className="w-8 text-center font-display text-lg font-bold">{quantity}</span>
               <button
-                onClick={() => setQuantity(quantity + 1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card transition-colors hover:bg-secondary"
+                onClick={() => setQuantity(Math.min(product.stock ?? Number.POSITIVE_INFINITY, quantity + 1))}
+                disabled={product.stock !== undefined && quantity >= product.stock}
+                aria-label={product.stock !== undefined && quantity >= product.stock ? "Maximum available stock reached" : "Increase quantity"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus size={16} />
               </button>
             </div>
+            {product.stock !== undefined && (
+              <p className="mt-2 text-xs text-muted-foreground">{product.stock} available</p>
+            )}
           </div>
 
           {/* Actions */}

@@ -49,15 +49,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((product: Product, size: string, quantity = 1) => {
     setItems((prev) => {
+      const stockLimit = product.stock ?? Number.POSITIVE_INFINITY;
+      if (stockLimit < 1) return prev;
       const existing = prev.find((i) => i.product.id === product.id && i.size === size);
       if (existing) {
         return prev.map((i) =>
           i.product.id === product.id && i.size === size
-            ? { ...i, quantity: i.quantity + quantity }
+            ? { ...i, quantity: Math.min(stockLimit, i.quantity + quantity) }
             : i
         );
       }
-      return [...prev, { product, size, quantity }];
+      return [...prev, { product, size, quantity: Math.min(stockLimit, Math.max(1, quantity)) }];
     });
   }, []);
 
@@ -69,7 +71,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (quantity < 1) return;
     setItems((prev) =>
       prev.map((i) =>
-        i.product.id === productId && i.size === size ? { ...i, quantity } : i
+        i.product.id === productId && i.size === size
+          ? { ...i, quantity: Math.min(i.product.stock ?? Number.POSITIVE_INFINITY, quantity) }
+          : i
       )
     );
   }, []);
