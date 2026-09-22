@@ -9,7 +9,7 @@ interface Props {
 
 export default function ProductGrid({ title, subtitle, products }: Props) {
   return (
-    <section className="py-16 sm:py-24">
+    <section className="py-12 sm:py-24">
       <div className="container mx-auto px-4">
         <div className="mb-10 flex flex-col items-center text-center">
           <span className="mb-3 inline-flex rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">
@@ -20,7 +20,7 @@ export default function ProductGrid({ title, subtitle, products }: Props) {
             <p className="mt-3 max-w-xl text-base text-muted-foreground">{subtitle}</p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:gap-6 lg:grid-cols-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}

@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAdminNotifications } from "@/lib/api";
+import { signOutAdmin } from "../AdminLogin";
 
 export default function AdminHeader() {
   const { isDark, toggleTheme } = useTheme();
@@ -68,7 +69,7 @@ export default function AdminHeader() {
           <DropdownMenuItem>
             <User className="mr-2 h-4 w-4" /> Admin Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate("/")}>
+          <DropdownMenuItem onClick={() => { signOutAdmin(); navigate("/"); }}>
             <LogOut className="mr-2 h-4 w-4" /> Exit to Store
           </DropdownMenuItem>
         </DropdownMenuContent>

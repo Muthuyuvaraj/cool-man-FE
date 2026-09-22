@@ -108,11 +108,14 @@
 
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    min-width: 320px;
+    overflow-x: hidden;
     background-image:
       radial-gradient(circle at top, hsl(24 94% 52% / 0.08), transparent 28%),
       linear-gradient(to bottom, hsl(36 38% 97%), hsl(36 24% 96%));
@@ -126,6 +129,14 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', 'Inter', sans-serif;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 639px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
 

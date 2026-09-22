@@ -15,7 +15,7 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,162,93,0.24),transparent_30%),linear-gradient(90deg,rgba(8,8,8,0.86)_0%,rgba(8,8,8,0.72)_42%,rgba(8,8,8,0.28)_100%)]" />
       </div>
 
-      <div className="container relative mx-auto flex min-h-[88vh] items-center px-4 pb-10 pt-12">
+      <div className="container relative mx-auto flex min-h-[78vh] items-center px-4 pb-10 pt-10 sm:min-h-[88vh] sm:pt-12">
         <motion.div
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -31,7 +31,7 @@ export default function HeroSection() {
             New Collection 2026
           </motion.span>
 
-          <h1 className="font-display text-5xl font-bold leading-[0.94] tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl">
+          <h1 className="font-display text-4xl font-bold leading-[0.96] tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl">
             Define Your
             <br />
             <span className="text-gradient">Street Style</span>
@@ -42,17 +42,17 @@ export default function HeroSection() {
             Discover limited drops engineered for everyday expression.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
             <Link
               to="/shop"
-              className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-glow"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-primary-foreground transition-all hover:-translate-y-0.5 hover:shadow-glow sm:w-auto"
             >
               Shop Now
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </Link>
             <Link
               to="/customize"
-              className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/10"
+              className="inline-flex w-full items-center justify-center rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/10 sm:w-auto"
             >
               Customize
             </Link>

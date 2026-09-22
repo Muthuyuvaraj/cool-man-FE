@@ -73,14 +73,14 @@ export default function CartPage() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20, height: 0 }}
-                className="flex gap-4 rounded-2xl border border-border/50 bg-card p-4 shadow-card sm:gap-6"
+                className="flex gap-3 rounded-2xl border border-border/50 bg-card p-3 shadow-card sm:gap-6 sm:p-4"
               >
                 {/* Image */}
                 <Link to={`/product/${item.product.id}`} className="shrink-0">
                   <img
                     src={item.product.image}
                     alt={item.product.name}
-                    className="h-28 w-24 rounded-xl object-cover sm:h-32 sm:w-28"
+                    className="h-24 w-20 rounded-xl object-cover sm:h-32 sm:w-28"
                   />
                 </Link>
 
@@ -97,7 +97,7 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {/* Quantity */}
                     <div className="flex items-center gap-2">
                       <button
@@ -134,6 +134,13 @@ export default function CartPage() {
                       </button>
                     </div>
                   </div>
+                  {item.product.stock !== undefined && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {item.product.stock - item.quantity > 0
+                        ? `${item.product.stock - item.quantity} left in stock`
+                        : "Maximum available stock reached"}
+                    </p>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -228,13 +235,6 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-                  {item.product.stock !== undefined && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {item.product.stock - item.quantity > 0
-                        ? `${item.product.stock - item.quantity} left in stock`
-                        : "Maximum available stock reached"}
-                    </p>
-                  )}
     </div>
   );
 }
