@@ -96,3 +96,4 @@ export function fetchAdminSettings() { return request<StoreSettings>("/api/admin
 export function updateAdminSettings(settings: StoreSettings) { return request<StoreSettings>("/api/admin/settings", { method: "PUT", body: JSON.stringify(settings) }); }
 export function fetchAdminAnalytics() { return request<AdminAnalytics>("/api/admin/analytics"); }
 export function fetchAdminNotifications() { return request<AdminNotification[]>("/api/admin/notifications"); }
+export function subscribeNewsletter(email: string) { return request<{ email: string }>("/api/newsletter", { method: "POST", body: JSON.stringify({ email }) }); }

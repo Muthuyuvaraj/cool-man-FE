@@ -10,8 +10,8 @@ export default function WishlistPage() {
     <div className="container mx-auto px-4 py-12 sm:py-16">
       <div className="mb-10 flex items-end justify-between gap-4">
         <div>
-          <span className="mb-3 inline-flex rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">
-            saved styles
+          <span className="eyebrow mb-3">
+            Saved styles
           </span>
           <h1 className="section-heading">Your Wishlist</h1>
           <p className="mt-3 text-muted-foreground">
@@ -48,7 +48,7 @@ export default function WishlistPage() {
           </p>
           <Link
             to="/shop"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all hover:shadow-glow"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow"
           >
             Explore the shop
             <ArrowRight size={16} />

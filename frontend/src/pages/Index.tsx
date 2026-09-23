@@ -2,6 +2,7 @@ import HeroSection from "@/components/HeroSection";
 import CategorySection from "@/components/CategorySection";
 import ProductGrid from "@/components/ProductGrid";
 import FeaturesStrip from "@/components/FeaturesStrip";
+import Marquee from "@/components/Marquee";
 import NewsletterSection from "@/components/NewsletterSection";
 import { useProducts } from "@/hooks/useProducts";
 
@@ -14,21 +15,26 @@ const Index = () => {
   return (
     <div>
       <HeroSection />
+      <Marquee />
       <FeaturesStrip />
       <ProductGrid
-        title="🔥 Featured Products"
-        subtitle="Our most loved styles"
+        eyebrow="Bestsellers"
+        title="Featured Products"
+        subtitle="Our most loved styles, picked by the community."
         products={featured}
       />
       <CategorySection />
       <ProductGrid
-        title="🆕 New Arrivals"
-        subtitle="Fresh drops just landed"
+        eyebrow="Just dropped"
+        title="New Arrivals"
+        subtitle="Fresh drops that just landed."
         products={newArrivals}
       />
       <ProductGrid
-        title="💥 Limited Time Offers"
-        subtitle="Grab them before they're gone"
+        eyebrow="On sale"
+        title="Limited Time Offers"
+        subtitle="Grab them before they're gone."
+        viewAllHref="/offers"
         products={onSale}
       />
       <NewsletterSection />

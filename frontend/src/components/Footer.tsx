@@ -6,7 +6,7 @@ export default function Footer() {
     <footer className="border-t border-border bg-card py-12">
       <div className="container mx-auto grid gap-8 px-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <h3 className="font-display text-xl font-bold">
+          <h3 className="font-display text-2xl font-extrabold tracking-[-0.03em]">
             COOL<span className="text-primary">MAN</span>
           </h3>
           <p className="mt-3 text-sm text-muted-foreground">
@@ -26,7 +26,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-3 text-sm font-bold uppercase tracking-wider">Shop</h4>
+          <h4 className="mb-4 font-display text-base font-semibold">Shop</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <Link to="/shop" className="hover:text-primary">All Products</Link>
             <Link to="/shop" className="hover:text-primary">T-Shirts</Link>
@@ -36,7 +36,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-3 text-sm font-bold uppercase tracking-wider">Help</h4>
+          <h4 className="mb-4 font-display text-base font-semibold">Help</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <Link to="/track" className="hover:text-primary">Track Order</Link>
             <a href="#" className="hover:text-primary">Returns</a>
@@ -46,7 +46,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="mb-3 text-sm font-bold uppercase tracking-wider">Company</h4>
+          <h4 className="mb-4 font-display text-base font-semibold">Company</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <a href="#" className="hover:text-primary">About Us</a>
             <a href="#" className="hover:text-primary">Careers</a>

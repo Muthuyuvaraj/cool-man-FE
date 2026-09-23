@@ -6,6 +6,8 @@ import ProductCard from "@/components/ProductCard";
 import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useProducts } from "@/hooks/useProducts";
+import { useWishlist } from "@/contexts/WishlistContext";
+import { formatPrice, getCompareAtPrice, getDiscountPercent, isOutOfStock } from "@/lib/product";
 
 const sizeGuide: Record<string, string> = {
   S: "36\" Chest, 27\" Length",
@@ -23,13 +25,13 @@ const mockReviews = [
 
 export default function ProductDetailPage() {
   const { addItem } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
   const { id } = useParams<{ id: string }>();
   const productsQuery = useProducts();
   const availableProducts = productsQuery.data?.length ? productsQuery.data : products;
   const product = availableProducts.find((item) => String(item.id) === id);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [liked, setLiked] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [activeTab, setActiveTab] = useState<"description" | "reviews" | "size-guide">("description");
 
@@ -46,15 +48,20 @@ export default function ProductDetailPage() {
     );
   }
 
-  const discount = product.originalPrice
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
-    : 0;
+  const discount = getDiscountPercent(product);
+  const compareAt = getCompareAtPrice(product);
+  const soldOut = isOutOfStock(product);
+  const liked = isWishlisted(product.id);
 
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const others = availableProducts.filter((p) => p.id !== product.id);
+  const related = [
+    ...others.filter((p) => p.category === product.category),
+    ...others.filter((p) => p.category !== product.category),
+  ].slice(0, 4);
 
   const handleAddToCart = () => {
-    const size = selectedSize || product.sizes[0];
-    addItem(product, size, quantity);
+    const size = selectedSize || product.sizes[0] || "Free Size";
+    if (!addItem(product, size, quantity)) return;
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
@@ -81,17 +88,17 @@ export default function ProductDetailPage() {
           <img
             src={product.image}
             alt={product.name}
-            className="aspect-square w-full object-cover"
+            className={`aspect-square w-full object-cover ${soldOut ? "opacity-60 grayscale" : ""}`}
           />
           {product.badge && (
-            <span className={`absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary-foreground ${
+            <span className={`absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-primary-foreground ${
               product.badge === "new" ? "bg-badge-new" : product.badge === "sale" ? "bg-badge-sale" : "bg-badge-trending"
             }`}>
               {product.badge}
             </span>
           )}
           {discount > 0 && (
-            <span className="absolute right-4 top-4 rounded-lg bg-destructive px-2.5 py-1 text-xs font-bold text-destructive-foreground">
+            <span className="absolute right-4 top-4 rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
               -{discount}%
             </span>
           )}
@@ -104,10 +111,10 @@ export default function ProductDetailPage() {
           className="flex flex-col gap-5"
         >
           <div>
-            <span className="rounded-full bg-secondary px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-secondary-foreground">
+            <span className="rounded-full bg-secondary px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-secondary-foreground">
               {product.fabric}
             </span>
-            <h1 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] sm:text-4xl lg:text-5xl">
               {product.name}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">{product.category}</p>
@@ -130,12 +137,12 @@ export default function ProductDetailPage() {
 
           {/* Price */}
           <div className="flex items-baseline gap-3">
-            <span className="font-display text-3xl font-extrabold">₹{product.price}</span>
-            {product.originalPrice && (
+            <span className="font-display text-3xl font-bold">{formatPrice(product.price)}</span>
+            {compareAt && (
               <>
-                <span className="text-lg text-muted-foreground line-through">₹{product.originalPrice}</span>
+                <span className="text-lg text-muted-foreground line-through">{formatPrice(compareAt)}</span>
                 <span className="rounded-full bg-badge-sale/10 px-2.5 py-0.5 text-xs font-bold text-badge-sale">
-                  Save ₹{product.originalPrice - product.price}
+                  Save {formatPrice(compareAt - product.price)}
                 </span>
               </>
             )}
@@ -149,7 +156,9 @@ export default function ProductDetailPage() {
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`h-11 min-w-[2.75rem] rounded-xl border text-sm font-semibold transition-all ${
+                  disabled={soldOut}
+                  aria-pressed={selectedSize === size}
+                  className={`h-11 min-w-[2.75rem] rounded-xl border px-2 disabled:cursor-not-allowed disabled:opacity-50 text-sm font-semibold transition-all ${
                     selectedSize === size
                       ? "border-primary bg-primary text-primary-foreground shadow-sm"
                       : "border-border bg-card text-muted-foreground hover:border-primary/50"
@@ -167,23 +176,27 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card transition-colors hover:bg-secondary"
+                disabled={soldOut || quantity <= 1}
+                aria-label="Decrease quantity"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Minus size={16} />
               </button>
               <span className="w-8 text-center font-display text-lg font-bold">{quantity}</span>
               <button
                 onClick={() => setQuantity(Math.min(product.stock ?? Number.POSITIVE_INFINITY, quantity + 1))}
-                disabled={product.stock !== undefined && quantity >= product.stock}
+                disabled={soldOut || (product.stock !== undefined && quantity >= product.stock)}
                 aria-label={product.stock !== undefined && quantity >= product.stock ? "Maximum available stock reached" : "Increase quantity"}
                 className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-card transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus size={16} />
               </button>
             </div>
-            {product.stock !== undefined && (
-              <p className="mt-2 text-xs text-muted-foreground">{product.stock} available</p>
-            )}
+            {soldOut ? (
+              <p className="mt-2 text-xs font-semibold text-destructive">Out of stock — check back soon</p>
+            ) : product.stock !== undefined && product.stock <= 10 ? (
+              <p className="mt-2 text-xs font-semibold text-badge-sale">Only {product.stock} left</p>
+            ) : null}
           </div>
 
           {/* Actions */}
@@ -191,14 +204,19 @@ export default function ProductDetailPage() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleAddToCart}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold uppercase tracking-wider transition-all ${
-                addedToCart
+              disabled={soldOut}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold transition-all ${
+                soldOut
+                  ? "cursor-not-allowed bg-muted text-muted-foreground"
+                  : addedToCart
                   ? "bg-badge-new text-primary-foreground"
                   : "bg-primary text-primary-foreground hover:shadow-glow"
               }`}
             >
               <AnimatePresence mode="wait">
-                {addedToCart ? (
+                {soldOut ? (
+                  <span key="soldout">Out of stock</span>
+                ) : addedToCart ? (
                   <motion.span key="done" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
                     <Check size={16} /> Added to Cart!
                   </motion.span>
@@ -210,7 +228,9 @@ export default function ProductDetailPage() {
               </AnimatePresence>
             </motion.button>
             <button
-              onClick={() => setLiked(!liked)}
+              onClick={() => toggleWishlist(product)}
+              aria-label={liked ? "Remove from wishlist" : "Add to wishlist"}
+              aria-pressed={liked}
               className={`flex h-[52px] w-[52px] items-center justify-center rounded-xl border transition-all ${
                 liked ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:border-primary/50"
               }`}
@@ -224,17 +244,17 @@ export default function ProductDetailPage() {
             <div className="flex flex-col items-center gap-1 text-center">
               <Truck size={18} className="text-primary" />
               <span className="text-[11px] font-semibold">Free Delivery</span>
-              <span className="text-[10px] text-muted-foreground">Above ₹999</span>
+              <span className="text-[11px] text-muted-foreground">Above ₹999</span>
             </div>
             <div className="flex flex-col items-center gap-1 text-center">
               <RotateCcw size={18} className="text-primary" />
               <span className="text-[11px] font-semibold">Easy Returns</span>
-              <span className="text-[10px] text-muted-foreground">7 days</span>
+              <span className="text-[11px] text-muted-foreground">7 days</span>
             </div>
             <div className="flex flex-col items-center gap-1 text-center">
               <Shield size={18} className="text-primary" />
               <span className="text-[11px] font-semibold">Quality Check</span>
-              <span className="text-[10px] text-muted-foreground">Verified</span>
+              <span className="text-[11px] text-muted-foreground">Verified</span>
             </div>
           </div>
         </motion.div>
@@ -259,6 +279,7 @@ export default function ProductDetailPage() {
         <div className="mt-6">
           {activeTab === "description" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+              {product.description && <p className="text-foreground">{product.description}</p>}
               <p>
                 The <strong className="text-foreground">{product.name}</strong> is crafted from premium {product.fabric.toLowerCase()} for
                 ultimate comfort and durability. Designed for the modern streetwear enthusiast who values both style and substance.
@@ -330,8 +351,8 @@ export default function ProductDetailPage() {
       {/* Related Products */}
       {related.length > 0 && (
         <div className="mt-16">
-          <h2 className="mb-6 font-display text-2xl font-bold">You May Also Like</h2>
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          <h2 className="section-heading mb-8 !text-2xl sm:!text-3xl">You May Also Like</h2>
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
             {related.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

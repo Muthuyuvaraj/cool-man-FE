@@ -18,7 +18,7 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AdminProduct | null>(null);
-  const [form, setForm] = useState({ name: "", price: "", originalPrice: "", stock: "", category: "", fabric: "", image: "", description: "", colors: "", sizes: "S, M, L, XL", badge: "" });
+  const [form, setForm] = useState<{ name: string; price: string; originalPrice: string; stock: string; category: string; fabric: string; image: string; description: string; colors: string; sizes: string; badge: AdminProduct["badge"] | "" }>({ name: "", price: "", originalPrice: "", stock: "", category: "", fabric: "", image: "", description: "", colors: "", sizes: "S, M, L, XL", badge: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const productsQuery = useQuery({
@@ -150,7 +150,7 @@ export default function AdminProductsPage() {
               </div>
               <div><Label>Fabric Type</Label><Input value={form.fabric} onChange={(e) => setForm({ ...form, fabric: e.target.value })} placeholder="100% Cotton" /></div>
               <div><Label>Description</Label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the product" className="min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" /></div>
-              <div className="grid grid-cols-2 gap-4"><div><Label>Original Price (₹)</Label><Input type="number" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} placeholder="1299" /></div><div><Label>Badge</Label><Select value={form.badge || "none"} onValueChange={(badge) => setForm({ ...form, badge: badge === "none" ? "" : badge })}><SelectTrigger><SelectValue placeholder="None" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="new">New</SelectItem><SelectItem value="sale">Sale</SelectItem><SelectItem value="trending">Trending</SelectItem></SelectContent></Select></div></div>
+              <div className="grid grid-cols-2 gap-4"><div><Label>Original Price (₹)</Label><Input type="number" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} placeholder="1299" /></div><div><Label>Badge</Label><Select value={form.badge || "none"} onValueChange={(badge) => setForm({ ...form, badge: badge === "none" ? "" : (badge as AdminProduct["badge"]) })}><SelectTrigger><SelectValue placeholder="None" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem><SelectItem value="new">New</SelectItem><SelectItem value="sale">Sale</SelectItem><SelectItem value="trending">Trending</SelectItem></SelectContent></Select></div></div>
               <div><Label>Sizes</Label><Input value={form.sizes} onChange={(e) => setForm({ ...form, sizes: e.target.value })} placeholder="S, M, L, XL" /></div>
               <div><Label>Colors</Label><Input value={form.colors} onChange={(e) => setForm({ ...form, colors: e.target.value })} placeholder="Black, White" /></div>
               <div>

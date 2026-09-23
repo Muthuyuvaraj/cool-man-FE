@@ -9,18 +9,18 @@ const features = [
 
 export default function FeaturesStrip() {
   return (
-    <section className="border-y border-border/60 bg-card/80 py-8">
-      <div className="container mx-auto grid grid-cols-1 gap-4 px-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="border-b border-border/60 bg-card/80 py-6 sm:py-8">
+      <div className="container mx-auto grid grid-cols-2 gap-3 px-4 sm:gap-4 lg:grid-cols-4">
         {features.map((f) => (
           <div
             key={f.label}
-            className="flex items-center gap-4 rounded-2xl border border-border bg-secondary/40 p-4 shadow-card transition-transform duration-300 hover:-translate-y-1"
+            className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-secondary/40 p-4 sm:flex-row sm:items-center sm:gap-4"
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
               <f.icon size={20} />
             </div>
             <div>
-              <p className="text-sm font-semibold text-card-foreground">{f.label}</p>
+              <p className="font-display text-base font-semibold leading-tight text-card-foreground">{f.label}</p>
               <p className="text-xs text-muted-foreground">{f.desc}</p>
             </div>
           </div>

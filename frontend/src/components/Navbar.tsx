@@ -54,25 +54,32 @@ export default function Navbar() {
     <>
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 glass-surface backdrop-blur-xl">
         <div className="container mx-auto flex h-20 items-center justify-between px-4">
-            <Link to="/" className="flex min-w-0 shrink items-center gap-1.5 font-display text-lg font-bold tracking-tight sm:gap-2 sm:text-2xl">
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground shadow-glow sm:h-9 sm:w-9 sm:text-sm">
+            <Link to="/" className="flex min-w-0 shrink items-center gap-2 font-display text-xl font-extrabold tracking-[-0.03em] sm:text-2xl">
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-sm text-primary-foreground shadow-glow sm:h-9 sm:w-9 sm:text-base">
               C
             </span>
               <span className="truncate">COOL<span className="text-primary">MAN</span></span>
           </Link>
 
-          <div className="hidden items-center gap-2 rounded-full border border-border bg-card/70 p-2 shadow-card md:flex">
+          <div className="hidden items-center gap-1 rounded-full border border-border bg-card/70 p-1.5 shadow-card md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition-all ${
+                className={`relative rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                   location.pathname === link.path
-                    ? "bg-primary text-primary-foreground shadow-glow"
+                    ? "text-primary-foreground"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                {link.label}
+                {location.pathname === link.path && (
+                  <motion.span
+                    layoutId="nav-pill"
+                    className="absolute inset-0 rounded-full bg-primary shadow-glow"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">{link.label}</span>
               </Link>
             ))}
           </div>
@@ -97,9 +104,15 @@ export default function Navbar() {
             </Link>
               <Link to="/cart" className="relative rounded-full border border-border bg-card p-2 text-foreground transition-colors hover:bg-secondary sm:p-2.5" aria-label="Cart">
               <ShoppingBag size={18} />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+              <motion.span
+                key={totalItems}
+                initial={{ scale: 0.4 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-primary-foreground"
+              >
                 {totalItems}
-              </span>
+              </motion.span>
             </Link>
               <Link to="/profile" className="hidden rounded-full border border-border bg-card p-2 text-foreground transition-colors hover:bg-secondary sm:p-2.5 sm:block" aria-label="Profile">
               <User size={18} />
@@ -128,7 +141,7 @@ export default function Navbar() {
                     key={link.path}
                     to={link.path}
                     onClick={() => setMobileOpen(false)}
-                    className={`rounded-2xl px-4 py-3 text-sm font-medium uppercase tracking-[0.2em] transition-colors ${
+                    className={`rounded-2xl px-4 py-3 text-base font-semibold transition-colors ${
                       location.pathname === link.path
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-secondary"

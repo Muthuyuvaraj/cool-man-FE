@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import type { Product } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { formatPrice, getCompareAtPrice, getDiscountPercent, isOutOfStock } from "@/lib/product";
 
 const badgeColors = {
   new: "bg-badge-new",
@@ -22,16 +23,16 @@ export default function ProductCard({ product }: { product: Product }) {
   const [addedToCart, setAddedToCart] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
 
+  const soldOut = isOutOfStock(product);
+  const compareAt = getCompareAtPrice(product);
+  const discount = getDiscountPercent(product);
+
   const handleAddToCart = () => {
-    const size = selectedSize || product.sizes[0];
-    addItem(product, size);
+    const size = selectedSize || product.sizes[0] || "Free Size";
+    if (!addItem(product, size)) return;
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 1500);
   };
-
-  const discount = product.originalPrice
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
-    : 0;
 
   return (
     <motion.div
@@ -39,14 +40,14 @@ export default function ProductCard({ product }: { product: Product }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-card shadow-card transition-all duration-500 hover:shadow-card-hover hover:-translate-y-1"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card transition-all duration-500 hover:-translate-y-1 hover:shadow-card-hover"
     >
       {/* Image Container */}
       <Link to={`/product/${product.id}`} className="relative aspect-[3/4] overflow-hidden bg-surface-sunken block">
         <img
           src={product.image}
           alt={product.name}
-          className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+          className={`h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${soldOut ? "opacity-60 grayscale" : ""}`}
           loading="lazy"
         />
 
@@ -58,15 +59,21 @@ export default function ProductCard({ product }: { product: Product }) {
           <motion.span
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            className={`absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground shadow-lg ${badgeColors[product.badge]}`}
+            className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-primary-foreground shadow-lg ${badgeColors[product.badge]}`}
           >
             {product.badge}
           </motion.span>
         )}
 
+        {soldOut && (
+          <span className="absolute inset-x-0 bottom-0 bg-foreground/85 py-2 text-center text-xs font-semibold uppercase tracking-[0.12em] text-background">
+            Sold out
+          </span>
+        )}
+
         {/* Discount tag */}
         {discount > 0 && (
-          <span className="absolute right-3 top-3 rounded-lg bg-destructive px-2 py-1 text-[10px] font-bold text-destructive-foreground shadow-lg">
+          <span className="absolute right-3 top-3 rounded-full bg-foreground px-2.5 py-1 text-[11px] font-semibold text-background shadow-lg">
             -{discount}%
           </span>
         )}
@@ -96,7 +103,7 @@ export default function ProductCard({ product }: { product: Product }) {
               event.stopPropagation();
               setQuickViewOpen(true);
             }}
-            className="rounded-full bg-card/90 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-card-foreground shadow-xl backdrop-blur-md transition-all hover:bg-card hover:scale-105"
+            className="rounded-full bg-card/90 px-5 py-2.5 text-sm font-semibold text-card-foreground shadow-xl backdrop-blur-md transition-all hover:bg-card hover:scale-105"
             aria-label="Quick view"
           >
             <span className="flex items-center gap-2">
@@ -110,12 +117,12 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Product Info */}
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         {/* Fabric tag */}
-        <span className="w-fit rounded-full bg-secondary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-secondary-foreground">
+        <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
           {product.fabric}
         </span>
 
         <Link to={`/product/${product.id}`} className="hover:text-primary transition-colors">
-          <h3 className="font-display text-sm font-bold leading-snug text-card-foreground sm:text-base">
+          <h3 className="line-clamp-2 font-display text-base font-semibold leading-snug text-card-foreground sm:text-lg">
             {product.name}
           </h3>
         </Link>
@@ -142,12 +149,12 @@ export default function ProductCard({ product }: { product: Product }) {
 
         {/* Price */}
         <div className="flex items-baseline gap-2">
-          <span className="font-display text-xl font-extrabold text-card-foreground">
-            ₹{product.price}
+          <span className="font-display text-xl font-bold text-card-foreground">
+            {formatPrice(product.price)}
           </span>
-          {product.originalPrice && (
+          {compareAt && (
             <span className="text-sm font-medium text-muted-foreground line-through">
-              ₹{product.originalPrice}
+              {formatPrice(compareAt)}
             </span>
           )}
         </div>
@@ -158,7 +165,9 @@ export default function ProductCard({ product }: { product: Product }) {
             <button
               key={size}
               onClick={() => setSelectedSize(size)}
-              className={`h-8 min-w-[2rem] rounded-lg border text-xs font-semibold transition-all duration-200 ${
+              disabled={soldOut}
+              aria-pressed={selectedSize === size}
+              className={`h-8 min-w-[2rem] rounded-lg border px-1.5 disabled:cursor-not-allowed disabled:opacity-50 text-xs font-semibold transition-all duration-200 ${
                 selectedSize === size
                   ? "border-primary bg-primary text-primary-foreground shadow-sm scale-105"
                   : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-card-foreground"
@@ -173,14 +182,19 @@ export default function ProductCard({ product }: { product: Product }) {
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleAddToCart}
-          className={`mt-auto flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-            addedToCart
-              ? "bg-badge-new text-primary-foreground"
-              : "bg-primary text-primary-foreground hover:shadow-glow"
+          disabled={soldOut}
+          className={`mt-auto flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-300 ${
+            soldOut
+              ? "cursor-not-allowed bg-muted text-muted-foreground"
+              : addedToCart
+                ? "bg-badge-new text-primary-foreground"
+                : "bg-primary text-primary-foreground hover:shadow-glow"
           }`}
         >
           <AnimatePresence mode="wait">
-            {addedToCart ? (
+            {soldOut ? (
+              <span key="soldout">Out of stock</span>
+            ) : addedToCart ? (
               <motion.span
                 key="check"
                 initial={{ scale: 0 }}
@@ -213,7 +227,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <img src={product.image} alt={product.name} className="h-64 w-full object-cover sm:h-full" />
             <div className="space-y-4 p-6">
               <DialogHeader><DialogTitle className="font-display text-2xl">{product.name}</DialogTitle></DialogHeader>
-              <div className="flex items-baseline gap-2"><span className="font-display text-2xl font-extrabold">₹{product.price}</span>{product.originalPrice && <span className="text-sm text-muted-foreground line-through">₹{product.originalPrice}</span>}</div>
+              <div className="flex items-baseline gap-2"><span className="font-display text-2xl font-bold">{formatPrice(product.price)}</span>{compareAt && <span className="text-sm text-muted-foreground line-through">{formatPrice(compareAt)}</span>}</div>
               <p className="text-sm leading-6 text-muted-foreground">{product.description || `Premium quality ${product.name} made with ${product.fabric}.`}</p>
               <div><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Fabric</p><p className="mt-1 text-sm font-medium">{product.fabric}</p></div>
               <div><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Available sizes</p><div className="mt-2 flex flex-wrap gap-2">{product.sizes.map((size) => <span key={size} className="rounded-lg border border-border px-3 py-1 text-xs font-semibold">{size}</span>)}</div></div>

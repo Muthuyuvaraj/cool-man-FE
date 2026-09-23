@@ -15,8 +15,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ["Space Grotesk", "Inter", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Bricolage Grotesque", "Plus Jakarta Sans", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -99,12 +99,28 @@ export default {
           from: { opacity: "0", transform: "translateX(20px)" },
           to: { opacity: "1", transform: "translateX(0)" },
         },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "ken-burns": {
+          from: { transform: "scale(1.12)" },
+          to: { transform: "scale(1)" },
+        },
+        "scroll-hint": {
+          "0%": { transform: "translateY(0)", opacity: "0" },
+          "30%": { opacity: "1" },
+          "100%": { transform: "translateY(10px)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.5s ease-out forwards",
         "slide-in-right": "slide-in-right 0.5s ease-out forwards",
+        marquee: "marquee 28s linear infinite",
+        "ken-burns": "ken-burns 2.4s cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "scroll-hint": "scroll-hint 1.8s ease-in-out infinite",
       },
     },
   },

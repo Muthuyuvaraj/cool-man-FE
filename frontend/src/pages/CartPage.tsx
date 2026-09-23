@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Minus, Plus, ShoppingBag, Tag, X, ArrowRight, PackageOpen } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { COUPONS } from "@/data/coupons";
+import { formatPrice } from "@/lib/product";
 
 export default function CartPage() {
   const {
     items, removeItem, updateQuantity, clearCart,
     subtotal, appliedCoupon, applyCoupon, removeCoupon,
-    discountAmount, total, totalItems,
+    discountAmount, total, totalItems, couponError: appliedCouponError,
   } = useCart();
 
   const [couponInput, setCouponInput] = useState("");
@@ -35,7 +37,7 @@ export default function CartPage() {
         <p className="mt-2 text-muted-foreground">Looks like you haven't added anything yet.</p>
         <Link
           to="/shop"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all hover:shadow-glow"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow"
         >
           <ShoppingBag size={16} /> Start Shopping
         </Link>
@@ -44,13 +46,12 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10">
+    <div className="container mx-auto px-4 py-10 sm:py-14">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Shopping Cart
-            </h1>
+            <span className="eyebrow mb-3">Your bag</span>
+            <h1 className="section-heading">Shopping Cart</h1>
             <p className="mt-1 text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</p>
           </div>
           <button
@@ -103,6 +104,7 @@ export default function CartPage() {
                       <button
                         onClick={() => updateQuantity(item.product.id, item.size, item.quantity - 1)}
                         disabled={item.quantity <= 1}
+                        aria-label="Decrease quantity"
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background transition-colors hover:bg-secondary disabled:opacity-40"
                       >
                         <Minus size={14} />
@@ -121,13 +123,14 @@ export default function CartPage() {
                     {/* Price + Delete */}
                     <div className="flex items-center gap-3">
                       <div className="text-right">
-                        <p className="font-display text-base font-extrabold">₹{item.product.price * item.quantity}</p>
+                        <p className="font-display text-base font-bold">{formatPrice(item.product.price * item.quantity)}</p>
                         {item.quantity > 1 && (
                           <p className="text-[11px] text-muted-foreground">₹{item.product.price} each</p>
                         )}
                       </div>
                       <button
                         onClick={() => removeItem(item.product.id, item.size)}
+                        aria-label={`Remove ${item.product.name}`}
                         className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 size={16} />
@@ -155,15 +158,18 @@ export default function CartPage() {
             {/* Coupon */}
             <div className="mt-5">
               {appliedCoupon ? (
-                <div className="flex items-center justify-between rounded-xl bg-primary/10 px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Tag size={14} className="text-primary" />
-                    <span className="font-bold text-primary">{appliedCoupon.code}</span>
-                    <span className="text-muted-foreground">applied</span>
+                <div>
+                  <div className="flex items-center justify-between rounded-xl bg-primary/10 px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Tag size={14} className="text-primary" />
+                      <span className="font-mono font-bold text-primary">{appliedCoupon.code}</span>
+                      <span className="text-muted-foreground">{appliedCouponError ? "not applied" : "applied"}</span>
+                    </div>
+                    <button onClick={removeCoupon} aria-label="Remove coupon" className="text-muted-foreground hover:text-destructive">
+                      <X size={16} />
+                    </button>
                   </div>
-                  <button onClick={removeCoupon} className="text-muted-foreground hover:text-destructive">
-                    <X size={16} />
-                  </button>
+                  {appliedCouponError && <p className="mt-2 text-xs text-destructive">{appliedCouponError}</p>}
                 </div>
               ) : (
                 <div>
@@ -184,7 +190,18 @@ export default function CartPage() {
                     </button>
                   </div>
                   {couponError && <p className="mt-2 text-xs text-destructive">{couponError}</p>}
-                  <p className="mt-2 text-[11px] text-muted-foreground">Try: COOL20, FIRST50, FLASH10</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {COUPONS.map((c) => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => { setCouponInput(c.code); setCouponError(""); }}
+                        className="rounded-full border border-dashed border-border px-2.5 py-1 font-mono text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                      >
+                        {c.code}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -193,12 +210,12 @@ export default function CartPage() {
             <div className="mt-6 space-y-3 border-t border-border/50 pt-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-semibold">₹{subtotal}</span>
+                <span className="font-semibold">{formatPrice(subtotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-primary">
-                  <span>Discount ({appliedCoupon?.label})</span>
-                  <span className="font-semibold">-₹{discountAmount}</span>
+                  <span>Discount ({appliedCoupon?.code})</span>
+                  <span className="font-semibold">-{formatPrice(discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -215,13 +232,13 @@ export default function CartPage() {
             {/* Total */}
             <div className="mt-4 flex items-baseline justify-between border-t border-border/50 pt-4">
               <span className="font-display text-lg font-bold">Total</span>
-              <span className="font-display text-2xl font-extrabold">₹{grandTotal}</span>
+              <span className="font-display text-2xl font-bold">{formatPrice(grandTotal)}</span>
             </div>
 
             {/* Checkout Button */}
             <Link
               to="/checkout"
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all hover:shadow-glow"
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow"
             >
               Proceed to Checkout <ArrowRight size={16} />
             </Link>

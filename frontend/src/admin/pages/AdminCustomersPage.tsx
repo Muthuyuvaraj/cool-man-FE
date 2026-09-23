@@ -83,7 +83,7 @@ export default function AdminCustomersPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">Email:</span><p className="font-medium">{selected.email}</p></div>
                 <div><span className="text-muted-foreground">Phone:</span><p className="font-medium">{selected.phone}</p></div>
-                <div><span className="text-muted-foreground">Joined:</span><p className="font-medium">{selected.joinDate}</p></div>
+                <div><span className="text-muted-foreground">Joined:</span><p className="font-medium">{selected.createdAt ? new Date(selected.createdAt).toLocaleDateString() : "—"}</p></div>
                 <div><span className="text-muted-foreground">Total Spent:</span><p className="font-medium">₹{selected.totalSpent.toLocaleString()}</p></div>
               </div>
               <div>

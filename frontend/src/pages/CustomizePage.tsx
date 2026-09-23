@@ -1,11 +1,15 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import type { Product } from "@/data/products";
+import customTshirtImage from "@/assets/products/custom-tshirt.jpg";
 import {
   Type,
   Upload,
   Palette,
   RotateCcw,
-  Download,
+  Check,
   ShoppingBag,
   Bold,
   Italic,
@@ -27,8 +31,8 @@ const TSHIRT_COLORS = [
 ];
 
 const FONTS = [
-  "Inter",
-  "Space Grotesk",
+  "Plus Jakarta Sans",
+  "Bricolage Grotesque",
   "Georgia",
   "Courier New",
   "Arial Black",
@@ -46,6 +50,9 @@ const TEXT_COLORS = [
   { name: "Blue", value: "#3b82f6" },
 ];
 
+const SIZES = ["S", "M", "L", "XL", "XXL"];
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
 const BASE_PRICE = 1299;
 const TEXT_PRICE = 200;
 const IMAGE_PRICE = 300;
@@ -61,10 +68,24 @@ export default function CustomizePage() {
   const [textAlign, setTextAlign] = useState<"left" | "center" | "right">("center");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"color" | "text" | "upload">("color");
+  const [size, setSize] = useState<string | null>(null);
+  const [sizeError, setSizeError] = useState(false);
+  const [added, setAdded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addItem } = useCart();
+  const { toast } = useToast();
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file && !file.type.startsWith("image/")) {
+      toast({ title: "Unsupported file", description: "Please upload a PNG, JPG or SVG image.", variant: "destructive" });
+      return;
+    }
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      toast({ title: "Image too large", description: "Please upload an image under 5 MB.", variant: "destructive" });
+      return;
+    }
     if (file) {
       const reader = new FileReader();
       reader.onload = (ev) => setUploadedImage(ev.target?.result as string);
@@ -82,6 +103,37 @@ export default function CustomizePage() {
     setIsItalic(false);
     setTextAlign("center");
     setUploadedImage(null);
+    setSize(null);
+    setSizeError(false);
+  };
+
+  const handleAddToCart = () => {
+    if (!size) {
+      setSizeError(true);
+      return;
+    }
+    const details = [tshirtColor.name, text && `"${text.trim()}"`, uploadedImage && "custom print"].filter(Boolean).join(" · ");
+    // Same design + colour = same cart line; any change makes a new line.
+    const signature = [tshirtColor.name, text, font, fontSize, isBold, isItalic, textAlign, textColor.name, uploadedImage?.length ?? 0].join("|");
+    let hash = 0;
+    for (let i = 0; i < signature.length; i++) hash = (hash * 31 + signature.charCodeAt(i)) >>> 0;
+
+    const product: Product = {
+      id: `custom-tee-${hash.toString(36)}`,
+      name: `Custom Tee (${details})`,
+      price: totalPrice,
+      image: customTshirtImage,
+      rating: 0,
+      reviews: 0,
+      sizes: SIZES,
+      fabric: "100% Cotton",
+      category: "Customized T-Shirts",
+      inStock: true,
+    };
+    addItem(product, size);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1800);
+    toast({ title: "Added to cart", description: `${product.name}, size ${size}` });
   };
 
   const totalPrice =
@@ -101,9 +153,10 @@ export default function CustomizePage() {
         animate={{ opacity: 1, y: 0 }}
         className="border-b border-border bg-card/50"
       >
-        <div className="container mx-auto px-4 py-6">
-          <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Design Your Own <span className="text-primary">T-Shirt</span>
+        <div className="container mx-auto px-4 py-10 sm:py-14">
+          <span className="eyebrow mb-3">Made by you</span>
+          <h1 className="section-heading">
+            Design Your Own <span className="text-gradient">T-Shirt</span>
           </h1>
           <p className="mt-1 text-muted-foreground">
             Create something unique — choose colors, add text, upload art.
@@ -185,7 +238,7 @@ export default function CustomizePage() {
               <div className="mt-6 rounded-2xl border border-border bg-card p-4 shadow-card">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-muted-foreground">Total Price</span>
-                  <span className="font-display text-2xl font-extrabold text-card-foreground">
+                  <span className="font-display text-2xl font-bold text-card-foreground">
                     ₹{totalPrice}
                   </span>
                 </div>
@@ -207,13 +260,50 @@ export default function CustomizePage() {
                     </div>
                   )}
                 </div>
+                <div className="mt-4 border-t border-border pt-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-semibold">Size</span>
+                    {sizeError && <span className="text-xs font-medium text-destructive">Please pick a size</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {SIZES.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => { setSize(s); setSizeError(false); }}
+                        aria-pressed={size === s}
+                        className={`h-10 min-w-[2.75rem] rounded-xl border px-2 text-sm font-semibold transition-all ${
+                          size === s
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : sizeError
+                              ? "border-destructive/60 bg-card text-muted-foreground"
+                              : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="mt-4 flex gap-2">
                   <motion.button
                     whileTap={{ scale: 0.97 }}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all hover:shadow-glow"
+                    onClick={handleAddToCart}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow ${
+                      added ? "bg-badge-new" : "bg-primary"
+                    }`}
                   >
-                    <ShoppingBag size={16} />
-                    Add to Cart — ₹{totalPrice}
+                    <AnimatePresence mode="wait" initial={false}>
+                      {added ? (
+                        <motion.span key="added" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
+                          <Check size={16} /> Added!
+                        </motion.span>
+                      ) : (
+                        <motion.span key="add" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
+                          <ShoppingBag size={16} /> Add to Cart — ₹{totalPrice}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                   <button
                     onClick={handleReset}
@@ -446,7 +536,7 @@ export default function CustomizePage() {
                             className="h-8 w-8 rounded-full border border-border shadow-inner"
                             style={{ backgroundColor: c.value }}
                           />
-                          <span className="text-[10px] font-medium text-muted-foreground">
+                          <span className="text-[11px] font-medium text-muted-foreground">
                             {c.name}
                           </span>
                         </button>

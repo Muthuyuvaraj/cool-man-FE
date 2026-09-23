@@ -113,7 +113,10 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+    line-height: 1.6;
     min-width: 320px;
     overflow-x: hidden;
     background-image:
@@ -128,8 +131,21 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Inter', sans-serif;
-    overflow-wrap: anywhere;
+    font-family: 'Bricolage Grotesque', 'Plus Jakarta Sans', sans-serif;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Prices, quantities and stats line up when digits change */
+  .font-display {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -152,7 +168,27 @@
   }
 
   .section-heading {
-    @apply text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl;
+    @apply font-display text-3xl font-bold tracking-[-0.03em] sm:text-4xl lg:text-5xl;
+  }
+
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-primary;
+  }
+
+  .eyebrow::before {
+    content: "";
+    @apply h-px w-6 bg-current;
   }
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

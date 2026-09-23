@@ -2,8 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { MotionConfig, motion } from "framer-motion";
 import { CartProvider } from "@/contexts/CartContext";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -35,11 +36,23 @@ const AdminSettingsPage = lazy(() => import("./admin/pages/AdminSettingsPage"));
 const queryClient = new QueryClient();
 
 function StoreLayout() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [location.pathname]);
+
   return (
     <>
       <Navbar />
-      <main className="min-h-screen">
-        <Routes>
+      <motion.main
+        key={location.pathname}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="min-h-screen"
+      >
+        <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/customize" element={<CustomizePage />} />
@@ -52,7 +65,7 @@ function StoreLayout() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </main>
+      </motion.main>
       <Footer />
     </>
   );
@@ -66,6 +79,7 @@ const App = () => (
           <WishlistProvider>
             <Toaster />
             <Sonner />
+            <MotionConfig reducedMotion="user">
             <BrowserRouter>
               <Suspense fallback={<div className="min-h-screen bg-background" aria-busy="true" />}>
                 <Routes>
@@ -86,6 +100,7 @@ const App = () => (
                 </Routes>
               </Suspense>
             </BrowserRouter>
+            </MotionConfig>
           </WishlistProvider>
         </AccountProvider>
       </CartProvider>
