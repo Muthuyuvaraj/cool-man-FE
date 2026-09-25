@@ -16,7 +16,7 @@ export type OrderInput = {
   customerEmail: string;
   phone: string;
   address: string;
-  items: { productId: string; name: string; size: string; quantity: number; price: number }[];
+  items: { productId: string; name: string; size: string; quantity: number; price: number; image?: string }[];
   subtotal: number;
   deliveryFee: number;
   discount: number;

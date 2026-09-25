@@ -67,6 +67,7 @@ export default function CheckoutPage() {
           size,
           quantity,
           price: product.price,
+          image: absoluteImageUrl(product.image),
         })),
         subtotal,
         deliveryFee,
@@ -138,7 +139,7 @@ export default function CheckoutPage() {
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Lock size={15} />}
             {submitting ? "Placing order…" : `Place order · ${formatPrice(grandTotal)}`}
           </button>
-          <p className="text-center text-xs text-muted-foreground">You'll get a tracking number right after ordering.</p>
+          <p className="text-center text-xs text-muted-foreground">You'll get a tracking number, and the store is notified on WhatsApp right away.</p>
         </form>
 
         <aside className="h-fit rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8 lg:sticky lg:top-24 lg:col-span-2">
@@ -181,6 +182,16 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
+}
+
+/** The server sends product photos to the store's WhatsApp by link, so bundled asset paths must be absolute. */
+function absoluteImageUrl(image: string): string | undefined {
+  if (!image || /^(data|blob):/.test(image)) return undefined;
+  try {
+    return new URL(image, window.location.origin).href;
+  } catch {
+    return undefined;
+  }
 }
 
 function EmptyState({ icon, title, body, cta, to }: { icon: React.ReactNode; title: string; body: string; cta: string; to: string }) {
