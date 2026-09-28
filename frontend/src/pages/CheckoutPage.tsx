@@ -56,18 +56,19 @@ export default function CheckoutPage() {
     setError("");
     setSubmitting(true);
     try {
+      const images = await Promise.all(items.map(({ product }) => whatsAppImage(product.image)));
       const order = await createOrder({
         customerName: account.name,
         customerEmail: account.email,
         phone: phone.trim(),
         address: address.trim(),
-        items: items.map(({ product, size, quantity }) => ({
+        items: items.map(({ product, size, quantity }, index) => ({
           productId: product.id,
           name: product.name,
           size,
           quantity,
           price: product.price,
-          image: absoluteImageUrl(product.image),
+          image: images[index],
         })),
         subtotal,
         deliveryFee,
@@ -184,13 +185,38 @@ export default function CheckoutPage() {
   );
 }
 
-/** The server sends product photos to the store's WhatsApp by link, so bundled asset paths must be absolute. */
-function absoluteImageUrl(image: string): string | undefined {
-  if (!image || /^(data|blob):/.test(image)) return undefined;
+const WHATSAPP_IMAGE_MAX_SIDE = 1024;
+
+/**
+ * The server forwards each item's photo to the store's WhatsApp, which only accepts JPEG/PNG.
+ * Re-encoding it here as a JPEG data URL covers WebP/GIF uploads and custom designs, and means the
+ * server never has to fetch a URL it may not reach (e.g. a localhost asset). Falls back to the absolute URL.
+ */
+async function whatsAppImage(image: string): Promise<string | undefined> {
+  if (!image) return undefined;
   try {
-    return new URL(image, window.location.origin).href;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = image;
+    await img.decode();
+    const scale = Math.min(1, WHATSAPP_IMAGE_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas unavailable");
+    // JPEG has no transparency; paint white behind transparent PNG designs.
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
   } catch {
-    return undefined;
+    if (/^(data|blob):/.test(image)) return undefined;
+    try {
+      return new URL(image, window.location.origin).href;
+    } catch {
+      return undefined;
+    }
   }
 }
 
