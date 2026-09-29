@@ -17,8 +17,9 @@ const statusIndex: Record<OrderStatus, number> = { placed: 0, confirmed: 1, ship
 export default function TrackOrderPage() {
   const [params, setParams] = useSearchParams();
   const justPlaced = params.get("placed") === "1";
-  // Set by checkout: WhatsApp click-to-chat link with the order pre-filled for the store owner.
-  const whatsappUrl = (useLocation().state as { whatsappUrl?: string } | null)?.whatsappUrl;
+  // Set by checkout: WhatsApp click-to-chat link with the order pre-filled for the store owner,
+  // and whether checkout already opened it in a new tab.
+  const { whatsappUrl, whatsappOpened } = (useLocation().state as { whatsappUrl?: string; whatsappOpened?: boolean } | null) ?? {};
   const [trackingId, setTrackingId] = useState(params.get("id") ?? "");
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [error, setError] = useState("");
@@ -78,9 +79,13 @@ export default function TrackOrderPage() {
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 text-sm font-semibold text-white transition-all hover:brightness-95"
                 >
                   <MessageCircle size={18} />
-                  Send order on WhatsApp
+                  {whatsappOpened ? "WhatsApp didn't open? Tap here" : "Send order on WhatsApp"}
                 </a>
-                <p className="mt-2 text-center text-xs text-muted-foreground">Opens WhatsApp with your order details filled in — just tap Send so the store can confirm it.</p>
+                <p className="mt-2 text-center text-xs text-muted-foreground">
+                  {whatsappOpened
+                    ? "We opened WhatsApp with your order filled in — tap Send there so the store can confirm it."
+                    : "Opens WhatsApp with your order details filled in — just tap Send so the store can confirm it."}
+                </p>
               </>
             )}
           </div>

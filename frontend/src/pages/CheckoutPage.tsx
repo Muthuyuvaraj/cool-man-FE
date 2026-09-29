@@ -55,6 +55,8 @@ export default function CheckoutPage() {
     }
     setError("");
     setSubmitting(true);
+    // Open the WhatsApp tab now, while we still have the click — browsers block pop-ups opened after a network wait.
+    const whatsappWindow = openPendingWindow();
     try {
       const images = await Promise.all(items.map(({ product }) => whatsAppImage(product.image)));
       const order = await createOrder({
@@ -80,8 +82,16 @@ export default function CheckoutPage() {
       // Stock changed on the server — refresh product listings.
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
-      navigate(`/track?id=${encodeURIComponent(order.trackingId)}&placed=1`, { state: { whatsappUrl: order.whatsappUrl } });
+      let whatsappOpened = false;
+      if (order.whatsappUrl && whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.href = order.whatsappUrl;
+        whatsappOpened = true;
+      } else {
+        whatsappWindow?.close();
+      }
+      navigate(`/track?id=${encodeURIComponent(order.trackingId)}&placed=1`, { state: { whatsappUrl: order.whatsappUrl, whatsappOpened } });
     } catch (requestError) {
+      whatsappWindow?.close();
       setError(
         requestError instanceof TypeError
           ? "We couldn't reach the store right now. Please try again in a moment."
@@ -140,7 +150,7 @@ export default function CheckoutPage() {
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Lock size={15} />}
             {submitting ? "Placing order…" : `Place order · ${formatPrice(grandTotal)}`}
           </button>
-          <p className="text-center text-xs text-muted-foreground">You'll get a tracking number, then send your order to the store on WhatsApp in one tap.</p>
+          <p className="text-center text-xs text-muted-foreground">WhatsApp opens with your order filled in — just tap Send so the store can confirm it.</p>
         </form>
 
         <aside className="h-fit rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8 lg:sticky lg:top-24 lg:col-span-2">
@@ -183,6 +193,20 @@ export default function CheckoutPage() {
       </div>
     </div>
   );
+}
+
+/** A blank tab opened during the click, pointed at WhatsApp once the order is saved. Null if pop-ups are blocked. */
+function openPendingWindow(): Window | null {
+  const pending = window.open("", "_blank");
+  if (!pending) return null;
+  pending.opener = null;
+  try {
+    pending.document.title = "Opening WhatsApp…";
+    pending.document.body.innerHTML = '<p style="font-family:system-ui,sans-serif;padding:2rem;text-align:center">Placing your order and opening WhatsApp…</p>';
+  } catch {
+    // Some browsers don't let us write to the new tab; it simply stays blank until redirected.
+  }
+  return pending;
 }
 
 const WHATSAPP_IMAGE_MAX_SIDE = 1024;
