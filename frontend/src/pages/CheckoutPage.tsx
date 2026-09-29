@@ -80,7 +80,7 @@ export default function CheckoutPage() {
       // Stock changed on the server — refresh product listings.
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["customer-orders"] });
-      navigate(`/track?id=${encodeURIComponent(order.trackingId)}&placed=1`);
+      navigate(`/track?id=${encodeURIComponent(order.trackingId)}&placed=1`, { state: { whatsappUrl: order.whatsappUrl } });
     } catch (requestError) {
       setError(
         requestError instanceof TypeError
@@ -140,7 +140,7 @@ export default function CheckoutPage() {
             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Lock size={15} />}
             {submitting ? "Placing order…" : `Place order · ${formatPrice(grandTotal)}`}
           </button>
-          <p className="text-center text-xs text-muted-foreground">You'll get a tracking number, and the store is notified on WhatsApp right away.</p>
+          <p className="text-center text-xs text-muted-foreground">You'll get a tracking number, then send your order to the store on WhatsApp in one tap.</p>
         </form>
 
         <aside className="h-fit rounded-2xl border border-border bg-card p-6 shadow-card sm:p-8 lg:sticky lg:top-24 lg:col-span-2">

@@ -25,7 +25,7 @@ export type OrderInput = {
   couponCode?: string;
 };
 
-export type CreatedOrder = OrderInput & { orderId: string; trackingId: string; status: string; paymentStatus: string; createdAt?: string };
+export type CreatedOrder = OrderInput & { orderId: string; trackingId: string; status: string; paymentStatus: string; createdAt?: string; whatsappUrl?: string };
 export type AdminOrder = CreatedOrder & { trackingId?: string; createdAt?: string };
 export type AdminCustomer = { name: string; email: string; phone: string; totalOrders: number; totalSpent: number; status: string; createdAt?: string };
 export type AdminCoupon = { code: string; discountType: string; discountValue: number; expiryDate: string; usageLimit: number; usedCount: number; active: boolean };

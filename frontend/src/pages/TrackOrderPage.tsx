@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Package, Truck, CheckCircle2, MapPin, Clock, Box, PartyPopper } from "lucide-react";
+import { Search, Package, Truck, CheckCircle2, MapPin, Clock, Box, PartyPopper, MessageCircle } from "lucide-react";
 import { fetchTrackedOrder, type AdminOrder } from "@/lib/api";
 
 type OrderStatus = "placed" | "confirmed" | "shipped" | "out_for_delivery" | "delivered";
@@ -17,6 +17,8 @@ const statusIndex: Record<OrderStatus, number> = { placed: 0, confirmed: 1, ship
 export default function TrackOrderPage() {
   const [params, setParams] = useSearchParams();
   const justPlaced = params.get("placed") === "1";
+  // Set by checkout: WhatsApp click-to-chat link with the order pre-filled for the store owner.
+  const whatsappUrl = (useLocation().state as { whatsappUrl?: string } | null)?.whatsappUrl;
   const [trackingId, setTrackingId] = useState(params.get("id") ?? "");
   const [order, setOrder] = useState<AdminOrder | null>(null);
   const [error, setError] = useState("");
@@ -59,12 +61,28 @@ export default function TrackOrderPage() {
         <h1 className="section-heading">Track Your Order</h1>
         <p className="mt-2 text-muted-foreground">Enter the tracking number shown in your profile after checkout.</p>
         {justPlaced && order && (
-          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-badge-new/30 bg-badge-new/10 px-5 py-4 text-left">
-            <PartyPopper size={22} className="shrink-0 text-badge-new" />
-            <div>
-              <p className="font-semibold">Order placed — thank you!</p>
-              <p className="text-sm text-muted-foreground">Save your tracking number <span className="font-mono font-semibold text-foreground">{order.trackingId}</span>. You can also find it in your profile.</p>
+          <div className="mt-6 rounded-2xl border border-badge-new/30 bg-badge-new/10 px-5 py-4 text-left">
+            <div className="flex items-center gap-3">
+              <PartyPopper size={22} className="shrink-0 text-badge-new" />
+              <div>
+                <p className="font-semibold">Order placed — thank you!</p>
+                <p className="text-sm text-muted-foreground">Save your tracking number <span className="font-mono font-semibold text-foreground">{order.trackingId}</span>. You can also find it in your profile.</p>
+              </div>
             </div>
+            {whatsappUrl && (
+              <>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 text-sm font-semibold text-white transition-all hover:brightness-95"
+                >
+                  <MessageCircle size={18} />
+                  Send order on WhatsApp
+                </a>
+                <p className="mt-2 text-center text-xs text-muted-foreground">Opens WhatsApp with your order details filled in — just tap Send so the store can confirm it.</p>
+              </>
+            )}
           </div>
         )}
         <div className="mt-8 flex gap-2">
