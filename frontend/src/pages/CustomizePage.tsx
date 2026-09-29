@@ -50,7 +50,112 @@ const TEXT_COLORS = [
   { name: "Blue", value: "#3b82f6" },
 ];
 
+const FABRICS = [
+  { label: "Premium Cotton 220 GSM", desc: "Soft, breathable, everyday comfort" },
+  { label: "Jersey Material 280 GSM", desc: "Stretchy, durable, sports-ready" },
+  { label: "Tri-Blend 200 GSM", desc: "Ultra-soft cotton-poly-rayon mix" },
+];
+
 const SIZES = ["S", "M", "L", "XL", "XXL"];
+
+type DesignSpec = {
+  shirtColor: string;
+  collarColor: string;
+  artwork: string | null;
+  text: string;
+  textColor: string;
+  font: string;
+  fontSize: number;
+  isBold: boolean;
+  isItalic: boolean;
+  textAlign: "left" | "center" | "right";
+};
+
+/** Draws the on-screen preview (shirt, sleeves, collar, artwork, text) to a JPEG data URL. */
+async function renderDesign(spec: DesignSpec): Promise<string> {
+  const width = 600;
+  const height = 800;
+  // The on-screen preview is ~448px wide; scale text to match.
+  const scale = width / 448;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+
+  ctx.fillStyle = "#f1f0ee";
+  ctx.fillRect(0, 0, width, height);
+
+  const shirtW = width * 0.75;
+  const shirtH = height * 0.85;
+  const shirtX = (width - shirtW) / 2;
+  const shirtY = (height - shirtH) / 2;
+  ctx.fillStyle = spec.shirtColor;
+  ctx.beginPath();
+  ctx.roundRect(shirtX - 24 * scale, shirtY + 16 * scale, 40 * scale, 80 * scale, 12 * scale);
+  ctx.roundRect(shirtX + shirtW - 16 * scale, shirtY + 16 * scale, 40 * scale, 80 * scale, 12 * scale);
+  ctx.roundRect(shirtX, shirtY, shirtW, shirtH, 16 * scale);
+  ctx.fill();
+
+  ctx.strokeStyle = spec.collarColor;
+  ctx.lineWidth = 2 * scale;
+  ctx.beginPath();
+  ctx.ellipse(width / 2, shirtY, 32 * scale, 28 * scale, 0, 0, Math.PI);
+  ctx.stroke();
+
+  const printW = shirtW * 0.7;
+  const printH = shirtH * 0.6;
+  const printX = (width - printW) / 2;
+  const printY = shirtY + (shirtH - printH) / 2;
+  const gap = 16 * scale;
+
+  let art: HTMLImageElement | null = null;
+  let artW = 0;
+  let artH = 0;
+  if (spec.artwork) {
+    art = new Image();
+    art.src = spec.artwork;
+    await art.decode();
+    // Same as the preview's max-h-32 / max-w-full / object-contain, without upscaling.
+    const fit = Math.min(printW / art.naturalWidth, (128 * scale) / art.naturalHeight, scale);
+    artW = art.naturalWidth * fit;
+    artH = art.naturalHeight * fit;
+  }
+
+  const fontPx = spec.fontSize * scale;
+  ctx.font = `${spec.isItalic ? "italic " : ""}${spec.isBold ? 700 : 400} ${fontPx}px "${spec.font}", sans-serif`;
+  const lines: string[] = [];
+  if (spec.text) {
+    let line = "";
+    for (const word of spec.text.split(/\s+/)) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(next).width > printW) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = next;
+      }
+    }
+    lines.push(line);
+  }
+  const lineH = fontPx * 1.25;
+  const contentH = artH + (art && lines.length ? gap : 0) + lines.length * lineH;
+  let y = printY + (printH - contentH) / 2;
+
+  if (art) {
+    ctx.drawImage(art, (width - artW) / 2, y, artW, artH);
+    y += artH + (lines.length ? gap : 0);
+  }
+  ctx.fillStyle = spec.textColor;
+  ctx.textBaseline = "top";
+  ctx.textAlign = spec.textAlign;
+  const textX = spec.textAlign === "left" ? printX : spec.textAlign === "right" ? printX + printW : width / 2;
+  for (const line of lines) {
+    ctx.fillText(line, textX, y + (lineH - fontPx) / 2);
+    y += lineH;
+  }
+  return canvas.toDataURL("image/jpeg", 0.85);
+}
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const BASE_PRICE = 1299;
@@ -59,6 +164,7 @@ const IMAGE_PRICE = 300;
 
 export default function CustomizePage() {
   const [tshirtColor, setTshirtColor] = useState(TSHIRT_COLORS[0]);
+  const [fabric, setFabric] = useState(FABRICS[0]);
   const [text, setText] = useState("");
   const [textColor, setTextColor] = useState(TEXT_COLORS[1]);
   const [font, setFont] = useState(FONTS[0]);
@@ -95,6 +201,7 @@ export default function CustomizePage() {
 
   const handleReset = () => {
     setTshirtColor(TSHIRT_COLORS[0]);
+    setFabric(FABRICS[0]);
     setText("");
     setTextColor(TEXT_COLORS[1]);
     setFont(FONTS[0]);
@@ -107,14 +214,33 @@ export default function CustomizePage() {
     setSizeError(false);
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!size) {
       setSizeError(true);
       return;
     }
-    const details = [tshirtColor.name, text && `"${text.trim()}"`, uploadedImage && "custom print"].filter(Boolean).join(" · ");
+    // Snapshot of the actual design, so the cart, order and store's WhatsApp show what the customer made.
+    const designImage = await renderDesign({
+      shirtColor: tshirtColor.value,
+      collarColor: tshirtColor.name === "White" ? "hsl(0 0% 85%)" : "rgba(0, 0, 0, 0.2)",
+      artwork: uploadedImage,
+      text: trimmedText,
+      textColor: textColor.value,
+      font,
+      fontSize,
+      isBold,
+      isItalic,
+      textAlign,
+    }).catch(() => customTshirtImage);
+    const textStyle = [font, `${fontSize}px`, isBold && "bold", isItalic && "italic", `${textAlign}-aligned`, `${textColor.name} text`].filter(Boolean).join(", ");
+    const details = [
+      tshirtColor.name,
+      fabric.label,
+      trimmedText && `"${trimmedText}" (${textStyle})`,
+      uploadedImage && "custom print",
+    ].filter(Boolean).join(" · ");
     // Same design + colour = same cart line; any change makes a new line.
-    const signature = [tshirtColor.name, text, font, fontSize, isBold, isItalic, textAlign, textColor.name, uploadedImage?.length ?? 0].join("|");
+    const signature = [tshirtColor.name, fabric.label, trimmedText, font, fontSize, isBold, isItalic, textAlign, textColor.name, uploadedImage ?? ""].join("|");
     let hash = 0;
     for (let i = 0; i < signature.length; i++) hash = (hash * 31 + signature.charCodeAt(i)) >>> 0;
 
@@ -122,11 +248,11 @@ export default function CustomizePage() {
       id: `custom-tee-${hash.toString(36)}`,
       name: `Custom Tee (${details})`,
       price: totalPrice,
-      image: customTshirtImage,
+      image: designImage,
       rating: 0,
       reviews: 0,
       sizes: SIZES,
-      fabric: "100% Cotton",
+      fabric: fabric.label,
       category: "Customized T-Shirts",
       inStock: true,
     };
@@ -136,8 +262,9 @@ export default function CustomizePage() {
     toast({ title: "Added to cart", description: `${product.name}, size ${size}` });
   };
 
+  const trimmedText = text.trim();
   const totalPrice =
-    BASE_PRICE + (text ? TEXT_PRICE : 0) + (uploadedImage ? IMAGE_PRICE : 0);
+    BASE_PRICE + (trimmedText ? TEXT_PRICE : 0) + (uploadedImage ? IMAGE_PRICE : 0);
 
   const tabs = [
     { id: "color" as const, label: "Color", icon: Palette },
@@ -247,7 +374,7 @@ export default function CustomizePage() {
                     <span>Base T-Shirt</span>
                     <span>₹{BASE_PRICE}</span>
                   </div>
-                  {text && (
+                  {trimmedText && (
                     <div className="flex justify-between">
                       <span>Custom Text</span>
                       <span>+₹{TEXT_PRICE}</span>
@@ -328,7 +455,9 @@ export default function CustomizePage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
+                  type="button"
                   onClick={() => setActiveTab(tab.id)}
+                  aria-pressed={activeTab === tab.id}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all ${
                     activeTab === tab.id
                       ? "bg-primary text-primary-foreground shadow-sm"
@@ -358,7 +487,9 @@ export default function CustomizePage() {
                       {TSHIRT_COLORS.map((color) => (
                         <button
                           key={color.name}
+                          type="button"
                           onClick={() => setTshirtColor(color)}
+                          aria-pressed={tshirtColor.name === color.name}
                           className={`group/color flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all ${
                             tshirtColor.name === color.name
                               ? "border-primary bg-primary/5 shadow-sm"
@@ -381,32 +512,39 @@ export default function CustomizePage() {
                       Fabric & Quality
                     </h3>
                     <div className="space-y-3">
-                      {[
-                        { label: "Premium Cotton 220 GSM", desc: "Soft, breathable, everyday comfort", selected: true },
-                        { label: "Jersey Material 280 GSM", desc: "Stretchy, durable, sports-ready", selected: false },
-                        { label: "Tri-Blend 200 GSM", desc: "Ultra-soft cotton-poly-rayon mix", selected: false },
-                      ].map((fabric) => (
-                        <label
-                          key={fabric.label}
-                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all ${
-                            fabric.selected
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/30"
-                          }`}
-                        >
-                          <div
-                            className={`mt-0.5 h-4 w-4 rounded-full border-2 transition-all ${
-                              fabric.selected
-                                ? "border-primary bg-primary"
-                                : "border-muted-foreground"
+                      {FABRICS.map((option) => {
+                        const selected = fabric.label === option.label;
+                        return (
+                          <label
+                            key={option.label}
+                            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary ${
+                              selected
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/30"
                             }`}
-                          />
-                          <div>
-                            <p className="text-sm font-semibold text-card-foreground">{fabric.label}</p>
-                            <p className="text-xs text-muted-foreground">{fabric.desc}</p>
-                          </div>
-                        </label>
-                      ))}
+                          >
+                            <input
+                              type="radio"
+                              name="fabric"
+                              value={option.label}
+                              checked={selected}
+                              onChange={() => setFabric(option)}
+                              className="sr-only"
+                            />
+                            <div
+                              className={`mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 transition-all ${
+                                selected
+                                  ? "border-primary bg-primary"
+                                  : "border-muted-foreground"
+                              }`}
+                            />
+                            <div>
+                              <p className="text-sm font-semibold text-card-foreground">{option.label}</p>
+                              <p className="text-xs text-muted-foreground">{option.desc}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 </motion.div>
@@ -477,7 +615,10 @@ export default function CustomizePage() {
                     {/* Text formatting */}
                     <div className="flex gap-2">
                       <button
+                        type="button"
                         onClick={() => setIsBold(!isBold)}
+                        aria-pressed={isBold}
+                        aria-label="Bold"
                         className={`rounded-lg border p-2.5 transition-all ${
                           isBold
                             ? "border-primary bg-primary text-primary-foreground"
@@ -487,7 +628,10 @@ export default function CustomizePage() {
                         <Bold size={16} />
                       </button>
                       <button
+                        type="button"
                         onClick={() => setIsItalic(!isItalic)}
+                        aria-pressed={isItalic}
+                        aria-label="Italic"
                         className={`rounded-lg border p-2.5 transition-all ${
                           isItalic
                             ? "border-primary bg-primary text-primary-foreground"
@@ -502,7 +646,10 @@ export default function CustomizePage() {
                         return (
                           <button
                             key={align}
+                            type="button"
                             onClick={() => setTextAlign(align)}
+                            aria-pressed={textAlign === align}
+                            aria-label={`Align ${align}`}
                             className={`rounded-lg border p-2.5 transition-all ${
                               textAlign === align
                                 ? "border-primary bg-primary text-primary-foreground"
@@ -525,7 +672,9 @@ export default function CustomizePage() {
                       {TEXT_COLORS.map((c) => (
                         <button
                           key={c.name}
+                          type="button"
                           onClick={() => setTextColor(c)}
+                          aria-pressed={textColor.name === c.name}
                           className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition-all ${
                             textColor.name === c.name
                               ? "border-primary"
