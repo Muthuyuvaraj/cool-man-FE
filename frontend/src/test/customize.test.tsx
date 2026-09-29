@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CartProvider, useCart } from "@/contexts/CartContext";
 import CustomizePage from "@/pages/CustomizePage";
@@ -6,10 +6,13 @@ import CustomizePage from "@/pages/CustomizePage";
 function CartProbe() {
   const { items, subtotal } = useCart();
   return (
-    <output data-testid="cart">
-      {items.map((item) => `${item.product.name} | ${item.product.fabric} | ${item.size}`).join("\n")}
-      {` | total ${subtotal}`}
-    </output>
+    <>
+      <output data-testid="cart">
+        {items.map((item) => `${item.product.name} | ${item.product.fabric} | ${item.size}`).join("\n")}
+        {` | total ${subtotal}`}
+      </output>
+      <output data-testid="artwork">{items.map((item) => item.product.artworkUrl ?? "").join("")}</output>
+    </>
   );
 }
 
@@ -60,6 +63,25 @@ describe("CustomizePage", () => {
     expect(cart).toContain('"Hello" (Impact, 36px, bold, italic, left-aligned, Gold text)');
     expect(cart).toContain("| Tri-Blend 200 GSM | XL");
     expect(cart).toContain("total 1499");
+  });
+
+  it("uploads the customer's picture and keeps its link on the cart item", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ url: "https://api.test/api/order-images/abc" }), { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { container } = renderPage();
+    fireEvent.click(screen.getByRole("button", { name: /^upload$/i }));
+    const file = new File([new Uint8Array([137, 80, 78, 71])], "art.png", { type: "image/png" });
+    fireEvent.change(container.querySelector('input[type="file"]')!, { target: { files: [file] } });
+    await screen.findByAltText("Uploaded design");
+
+    fireEvent.click(screen.getByRole("button", { name: "M" }));
+    fireEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+
+    await waitFor(() => expect(screen.getByTestId("artwork").textContent).toBe("https://api.test/api/order-images/abc"));
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toMatch(/\/api\/design-uploads$/);
+    expect(JSON.parse(init.body as string).image).toMatch(/^data:image\/png;base64,/);
+    vi.unstubAllGlobals();
   });
 
   it("does not charge for text that is only spaces", () => {

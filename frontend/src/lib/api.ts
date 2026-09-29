@@ -17,7 +17,7 @@ export type OrderInput = {
   customerEmail: string;
   phone: string;
   address: string;
-  items: { productId: string; name: string; size: string; quantity: number; price: number; image?: string }[];
+  items: { productId: string; name: string; size: string; quantity: number; price: number; image?: string; artworkUrl?: string }[];
   subtotal: number;
   deliveryFee: number;
   discount: number;
@@ -91,6 +91,7 @@ export function updateAdminOrder(orderId: string, changes: { status?: string; tr
 export function fetchAdminCustomers() { return request<AdminCustomer[]>("/api/admin/customers"); }
 export function createCustomer(customer: { name: string; email: string; phone: string }) { return request<AdminCustomer>("/api/customers", { method: "POST", body: JSON.stringify(customer) }); }
 export function updateCustomerStatus(email: string, status: "active" | "blocked") { return request<AdminCustomer>(`/api/admin/customers/${encodeURIComponent(email)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+export function uploadDesign(image: string) { return request<{ url: string }>("/api/design-uploads", { method: "POST", body: JSON.stringify({ image }) }); }
 export function fetchCoupons() { return request<Coupon[]>("/api/coupons"); }
 export function fetchCoupon(code: string) { return request<Coupon>(`/api/coupons/${encodeURIComponent(code.trim().toUpperCase())}`); }
 export function fetchAdminCoupons() { return request<AdminCoupon[]>("/api/admin/coupons"); }

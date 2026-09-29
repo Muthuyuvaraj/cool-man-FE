@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@/data/products";
+import { uploadDesign } from "@/lib/api";
 import customTshirtImage from "@/assets/products/custom-tshirt.jpg";
 import {
   Type,
@@ -76,6 +77,24 @@ type DesignSpec = {
   isItalic: boolean;
   textAlign: "left" | "center" | "right";
 };
+
+/**
+ * The customer's picture as JPEG/PNG for the store. JPEG and PNG uploads are sent untouched (full print quality);
+ * other formats (WebP, GIF, SVG…) are redrawn as PNG, keeping transparency.
+ */
+async function printableArtwork(dataUrl: string): Promise<string> {
+  if (/^data:image\/(png|jpe?g);/.test(dataUrl)) return dataUrl;
+  const img = new Image();
+  img.src = dataUrl;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth || 2000;
+  canvas.height = img.naturalHeight || 2000;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/png");
+}
 
 /** Draws the on-screen preview (shirt, sleeves, collar, artwork, text) to a JPEG data URL. */
 async function renderDesign(spec: DesignSpec): Promise<string> {
@@ -183,7 +202,10 @@ export default function CustomizePage() {
   const [size, setSize] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState(false);
   const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Uploaded picture -> its link on the store server, so adding the same design again doesn't re-upload it.
+  const artworkLinks = useRef(new Map<string, string>());
   const { addItem } = useCart();
   const { toast } = useToast();
 
@@ -225,6 +247,27 @@ export default function CustomizePage() {
       setSizeError(true);
       return;
     }
+    if (adding) return;
+    let artworkUrl: string | undefined;
+    if (uploadedImage) {
+      artworkUrl = artworkLinks.current.get(uploadedImage);
+      if (!artworkUrl) {
+        setAdding(true);
+        try {
+          artworkUrl = (await uploadDesign(await printableArtwork(uploadedImage))).url;
+          artworkLinks.current.set(uploadedImage, artworkUrl);
+        } catch (error) {
+          setAdding(false);
+          toast({
+            title: "Couldn't upload your picture",
+            description: error instanceof Error && !(error instanceof TypeError) ? error.message : "Check your connection and try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        setAdding(false);
+      }
+    }
     // Snapshot of the actual design, so the cart, order and store's WhatsApp show what the customer made.
     const designImage = await renderDesign({
       shirtColor: tshirtColor.value,
@@ -261,6 +304,7 @@ export default function CustomizePage() {
       fabric: fabric.label,
       category: "Customized T-Shirts",
       inStock: true,
+      artworkUrl,
     };
     addItem(product, size);
     setAdded(true);
@@ -422,7 +466,8 @@ export default function CustomizePage() {
                   <motion.button
                     whileTap={{ scale: 0.97 }}
                     onClick={handleAddToCart}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow ${
+                    disabled={adding}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow disabled:cursor-wait disabled:opacity-80 ${
                       added ? "bg-badge-new" : "bg-primary"
                     }`}
                   >
@@ -433,7 +478,7 @@ export default function CustomizePage() {
                         </motion.span>
                       ) : (
                         <motion.span key="add" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="flex items-center gap-2">
-                          <ShoppingBag size={16} /> Add to Cart — ₹{totalPrice}
+                          <ShoppingBag size={16} /> {adding ? "Uploading your picture…" : `Add to Cart — ₹${totalPrice}`}
                         </motion.span>
                       )}
                     </AnimatePresence>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Eye, Save } from "lucide-react";
+import { Search, Eye, Save, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -116,7 +116,21 @@ export default function AdminOrdersPage() {
                 <div><span className="text-muted-foreground">Amount:</span><p className="font-medium">₹{selected.total.toLocaleString()}</p></div>
                 <div><span className="text-muted-foreground">Date:</span><p className="font-medium">{selected.createdAt?.slice(0, 10)}</p></div>
               </div>
-              <div><span className="text-sm text-muted-foreground">Products:</span><p className="text-sm font-medium">{selected.items.map((item) => `${item.name} (${item.quantity})`).join(", ")}</p></div>
+              <div>
+                <span className="text-sm text-muted-foreground">Products:</span>
+                <ul className="mt-1 space-y-1 text-sm font-medium">
+                  {selected.items.map((item, index) => (
+                    <li key={index}>
+                      {item.name} — Size {item.size} × {item.quantity}
+                      {item.artworkUrl && (
+                        <a href={item.artworkUrl} target="_blank" rel="noopener noreferrer" className="ml-2 inline-flex items-center gap-1 text-primary underline underline-offset-2">
+                          <ImageIcon className="h-3.5 w-3.5" /> Customer's picture
+                        </a>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <div><Label>Update Status</Label>
                 <Select value={editStatus} onValueChange={setEditStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>

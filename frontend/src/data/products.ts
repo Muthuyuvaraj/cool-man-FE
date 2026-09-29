@@ -23,6 +23,8 @@ export type Product = {
   active?: boolean;
   description?: string;
   colors?: string[];
+  /** Custom tees: public link to the customer's original uploaded picture, sent to the store with the order. */
+  artworkUrl?: string;
 };
 
 export const products: Product[] = [
