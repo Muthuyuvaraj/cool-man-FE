@@ -4,7 +4,6 @@ const items = [
   "7-day easy returns",
   "Limited drops weekly",
   "Custom tees in 48h",
-  "Use COOL20 for 20% off",
 ];
 
 export default function Marquee() {

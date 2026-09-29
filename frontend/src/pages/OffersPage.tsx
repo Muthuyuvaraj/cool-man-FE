@@ -1,13 +1,13 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Clock, Copy, Check, Percent, Zap, Gift, Tag, Flame, Snowflake, Layers, ArrowRight, type LucideIcon } from "lucide-react";
-import { COUPONS } from "@/data/coupons";
+import { Clock, Copy, Check, Percent, Tag, Flame, Snowflake, Layers, ArrowRight } from "lucide-react";
+import { couponLabel, couponValidTill } from "@/data/coupons";
+import { fetchCoupons } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { getCompareAtPrice } from "@/lib/product";
-
-const couponIcons: Record<string, LucideIcon> = { COOL20: Percent, FIRST50: Gift, HOODIE30: Tag, FLASH10: Zap };
 
 const deals = [
   { title: "Buy 2 Get 1 Free", subtitle: "On all plain T-shirts", icon: Flame, featured: true },
@@ -17,6 +17,7 @@ const deals = [
 
 export default function OffersPage() {
   const { data: products = [] } = useProducts();
+  const { data: coupons = [] } = useQuery({ queryKey: ["coupons"], queryFn: fetchCoupons, staleTime: 30_000, retry: false });
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const saleProducts = products.filter((p) => p.badge === "sale" || getCompareAtPrice(p));
 
@@ -87,12 +88,13 @@ export default function OffersPage() {
         ))}
       </div>
 
-      {/* Coupon Codes */}
+      {/* Coupon Codes — only what the admin has switched on */}
+      {coupons.length > 0 && (
       <section className="mb-14">
         <h2 className="mb-6 font-display text-2xl font-bold sm:text-3xl">Coupon Codes</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {COUPONS.map((coupon, i) => {
-            const Icon = couponIcons[coupon.code] ?? Tag;
+          {coupons.map((coupon, i) => {
+            const Icon = coupon.discountType === "percentage" ? Percent : Tag;
             return (
             <motion.div
               key={coupon.code}
@@ -106,11 +108,11 @@ export default function OffersPage() {
                   <Icon size={20} />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-display text-xl font-bold">{coupon.label}</p>
-                  <p className="text-sm text-muted-foreground">{coupon.description}</p>
+                  <p className="font-display text-xl font-bold">{couponLabel(coupon)}</p>
+                  <p className="text-sm text-muted-foreground">On your whole order</p>
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock size={11} />
-                    Valid till {coupon.validTill}
+                    Valid till {couponValidTill(coupon)}
                   </p>
                 </div>
               </div>
@@ -129,6 +131,7 @@ export default function OffersPage() {
           })}
         </div>
       </section>
+      )}
 
       {/* Sale Products */}
       {saleProducts.length > 0 && (

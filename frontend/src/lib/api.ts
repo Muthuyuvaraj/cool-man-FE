@@ -1,3 +1,4 @@
+import type { Coupon } from "@/data/coupons";
 import type { Product } from "@/data/products";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -89,9 +90,12 @@ export function fetchAdminOrders() { return request<AdminOrder[]>("/api/admin/or
 export function updateAdminOrder(orderId: string, changes: { status?: string; trackingId?: string }) { return request<AdminOrder>(`/api/admin/orders/${orderId}`, { method: "PATCH", body: JSON.stringify(changes) }); }
 export function fetchAdminCustomers() { return request<AdminCustomer[]>("/api/admin/customers"); }
 export function createCustomer(customer: { name: string; email: string; phone: string }) { return request<AdminCustomer>("/api/customers", { method: "POST", body: JSON.stringify(customer) }); }
+export function updateCustomerStatus(email: string, status: "active" | "blocked") { return request<AdminCustomer>(`/api/admin/customers/${encodeURIComponent(email)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+export function fetchCoupons() { return request<Coupon[]>("/api/coupons"); }
+export function fetchCoupon(code: string) { return request<Coupon>(`/api/coupons/${encodeURIComponent(code.trim().toUpperCase())}`); }
 export function fetchAdminCoupons() { return request<AdminCoupon[]>("/api/admin/coupons"); }
 export function createCoupon(coupon: Omit<AdminCoupon, "usedCount">) { return request<AdminCoupon>("/api/admin/coupons", { method: "POST", body: JSON.stringify(coupon) }); }
-export function updateCoupon(code: string, active: boolean) { return request<AdminCoupon>(`/api/admin/coupons/${code}`, { method: "PATCH", body: JSON.stringify({ active }) }); }
+export function updateCoupon(code: string, active: boolean) { return request<AdminCoupon>(`/api/admin/coupons/${encodeURIComponent(code)}`, { method: "PATCH", body: JSON.stringify({ active }) }); }
 export function fetchAdminSettings() { return request<StoreSettings>("/api/admin/settings"); }
 export function updateAdminSettings(settings: StoreSettings) { return request<StoreSettings>("/api/admin/settings", { method: "PUT", body: JSON.stringify(settings) }); }
 export function fetchAdminAnalytics() { return request<AdminAnalytics>("/api/admin/analytics"); }

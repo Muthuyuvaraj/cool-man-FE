@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Search, Eye, Ban } from "lucide-react";
+import { Search, Eye, Ban, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { fetchAdminCustomers, type AdminCustomer } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { fetchAdminCustomers, updateCustomerStatus, type AdminCustomer } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AdminCustomersPage() {
@@ -16,6 +16,15 @@ export default function AdminCustomersPage() {
   const { toast } = useToast();
   const customersQuery = useQuery({ queryKey: ["admin-customers"], queryFn: fetchAdminCustomers, refetchInterval: 15000 });
   const customers = customersQuery.data ?? [];
+  const queryClient = useQueryClient();
+  const statusMutation = useMutation({
+    mutationFn: ({ email, status }: { email: string; status: "active" | "blocked" }) => updateCustomerStatus(email, status),
+    onSuccess: (customer) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+      toast({ title: customer.status === "blocked" ? "Customer blocked" : "Customer unblocked" });
+    },
+    onError: (error: Error) => toast({ title: "Could not update customer", description: error.message, variant: "destructive" }),
+  });
 
   const filtered = customers.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase())
@@ -63,10 +72,17 @@ export default function AdminCustomersPage() {
                   </TableCell>
                   <TableCell className="text-right space-x-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelected(c)}><Eye className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
-                      onClick={() => toast({ title: "Customer status is read-only", description: "Add an account status endpoint before changing this customer." })}>
-                      <Ban className="h-3.5 w-3.5" />
-                    </Button>
+                    {c.status === "blocked" ? (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-badge-new" title="Unblock customer" aria-label={`Unblock ${c.name}`}
+                        disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ email: c.email, status: "active" })}>
+                        <CheckCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Block customer" aria-label={`Block ${c.name}`}
+                        disabled={statusMutation.isPending} onClick={() => statusMutation.mutate({ email: c.email, status: "blocked" })}>
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

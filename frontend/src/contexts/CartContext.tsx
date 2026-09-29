@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { Product } from "@/data/products";
-import { evaluateCoupon, findCoupon, type Coupon } from "@/data/coupons";
+import { evaluateCoupon, type Coupon } from "@/data/coupons";
+import { fetchCoupon } from "@/lib/api";
 
 export interface CartItem {
   product: Product;
@@ -19,7 +20,7 @@ interface CartContextType {
   appliedCoupon: Coupon | null;
   /** Set when the applied coupon no longer qualifies (e.g. subtotal dropped below its minimum). */
   couponError: string | null;
-  applyCoupon: (code: string) => string | null; // returns error or null
+  applyCoupon: (code: string) => Promise<string | null>; // resolves to an error or null
   removeCoupon: () => void;
   discountAmount: number;
   total: number;
@@ -58,12 +59,13 @@ const stockLimitOf = (product: Product) => product.stock ?? Number.POSITIVE_INFI
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => readStorage<CartItem[]>(CART_KEY, []));
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(() => {
-    const code = readStorage<string | null>(COUPON_KEY, null);
-    return code ? findCoupon(code) ?? null : null;
+    const stored = readStorage<Coupon | string | null>(COUPON_KEY, null);
+    // Older carts stored only the code; those have to be re-applied.
+    return stored && typeof stored === "object" ? stored : null;
   });
 
   useEffect(() => writeStorage(CART_KEY, items), [items]);
-  useEffect(() => writeStorage(COUPON_KEY, appliedCoupon?.code ?? null), [appliedCoupon]);
+  useEffect(() => writeStorage(COUPON_KEY, appliedCoupon), [appliedCoupon]);
 
   const addItem = useCallback((product: Product, size: string, quantity = 1) => {
     const stockLimit = stockLimitOf(product);
@@ -106,10 +108,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const subtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
 
   const applyCoupon = useCallback(
-    (code: string): string | null => {
+    async (code: string): Promise<string | null> => {
       if (!code.trim()) return "Enter a coupon code";
-      const coupon = findCoupon(code);
-      if (!coupon) return "Invalid coupon code";
+      let coupon: Coupon;
+      try {
+        coupon = await fetchCoupon(code);
+      } catch (error) {
+        return error instanceof TypeError ? "Couldn't check the coupon right now. Try again." : "Invalid or expired coupon code";
+      }
       const { error } = evaluateCoupon(coupon, items);
       if (error) return error;
       setAppliedCoupon(coupon);

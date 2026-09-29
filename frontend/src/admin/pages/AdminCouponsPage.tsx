@@ -19,8 +19,10 @@ export default function AdminCouponsPage() {
   const queryClient = useQueryClient();
   const couponsQuery = useQuery({ queryKey: ["admin-coupons"], queryFn: fetchAdminCoupons, refetchInterval: 15000 });
   const coupons = couponsQuery.data ?? [];
-  const [form, setForm] = useState({ code: "", discountType: "percentage", discountValue: "", expiryDate: "", usageLimit: "" });
-  const createMutation = useMutation({ mutationFn: () => createCoupon({ code: form.code, discountType: form.discountType, discountValue: Number(form.discountValue), expiryDate: form.expiryDate, usageLimit: Number(form.usageLimit), active: true }), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-coupons"] }); setDialogOpen(false); toast({ title: "Coupon created" }); }, onError: (error: Error) => toast({ title: "Could not create coupon", description: error.message, variant: "destructive" }) });
+  const emptyForm = { code: "", discountType: "percentage", discountValue: "", expiryDate: "", usageLimit: "", active: true };
+  const [form, setForm] = useState(emptyForm);
+  const refreshCoupons = () => { queryClient.invalidateQueries({ queryKey: ["admin-coupons"] }); queryClient.invalidateQueries({ queryKey: ["coupons"] }); };
+  const createMutation = useMutation({ mutationFn: () => createCoupon({ code: form.code, discountType: form.discountType, discountValue: Number(form.discountValue), expiryDate: form.expiryDate, usageLimit: Number(form.usageLimit), active: form.active }), onSuccess: () => { refreshCoupons(); setForm(emptyForm); setDialogOpen(false); toast({ title: "Coupon created" }); }, onError: (error: Error) => toast({ title: "Could not create coupon", description: error.message, variant: "destructive" }) });
 
   return (
     <div className="space-y-6">
@@ -48,7 +50,7 @@ export default function AdminCouponsPage() {
               <div><Label>Discount Value</Label><Input type="number" value={form.discountValue} onChange={(event) => setForm({ ...form, discountValue: event.target.value })} placeholder="20" /></div>
               <div><Label>Expiry Date</Label><Input type="date" value={form.expiryDate} onChange={(event) => setForm({ ...form, expiryDate: event.target.value })} /></div>
               <div><Label>Usage Limit</Label><Input type="number" value={form.usageLimit} onChange={(event) => setForm({ ...form, usageLimit: event.target.value })} placeholder="100" /></div>
-              <div className="flex items-center gap-2"><Switch defaultChecked /><Label>Active</Label></div>
+              <div className="flex items-center gap-2"><Switch id="coupon-active" checked={form.active} onCheckedChange={(active) => setForm({ ...form, active })} /><Label htmlFor="coupon-active">Active</Label></div>
               <Button onClick={() => createMutation.mutate()} disabled={createMutation.isPending || !form.code || !form.discountValue || !form.expiryDate || !form.usageLimit} className="w-full">Create</Button>
             </div>
           </DialogContent>
@@ -81,7 +83,7 @@ export default function AdminCouponsPage() {
                   <TableCell>{c.discountType === "percentage" ? `${c.discountValue}%` : `₹${c.discountValue}`}</TableCell>
                   <TableCell className="text-muted-foreground">{c.expiryDate}</TableCell>
                   <TableCell>{c.usedCount}/{c.usageLimit}</TableCell>
-                  <TableCell><Switch checked={c.active} onCheckedChange={(active) => updateCoupon(c.code, active).then(() => queryClient.invalidateQueries({ queryKey: ["admin-coupons"] })).catch((error: Error) => toast({ title: "Could not update coupon", description: error.message, variant: "destructive" }))} /></TableCell>
+                  <TableCell><Switch checked={c.active} onCheckedChange={(active) => updateCoupon(c.code, active).then(refreshCoupons).catch((error: Error) => toast({ title: "Could not update coupon", description: error.message, variant: "destructive" }))} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>

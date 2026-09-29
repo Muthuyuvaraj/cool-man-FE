@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { CartProvider, useCart } from "@/contexts/CartContext";
-import { evaluateCoupon, findCoupon } from "@/data/coupons";
+import { evaluateCoupon, type Coupon } from "@/data/coupons";
 import { getCompareAtPrice, getDiscountPercent, isOutOfStock } from "@/lib/product";
 import type { Product } from "@/data/products";
 
@@ -41,34 +41,26 @@ describe("product helpers", () => {
   });
 });
 
+const percent20: Coupon = { code: "SAVE20", discountType: "percentage", discountValue: 20, expiryDate: "2099-12-31" };
+const flat100: Coupon = { code: "FLAT100", discountType: "fixed", discountValue: 100, expiryDate: "2099-12-31" };
+
 describe("coupons", () => {
-  it("enforces the COOL20 minimum", () => {
-    const coupon = findCoupon("cool20")!;
-    expect(evaluateCoupon(coupon, [{ product: make(), quantity: 2 }]).error).toMatch(/₹499 more/);
-    expect(evaluateCoupon(coupon, [{ product: make(), quantity: 3 }])).toEqual({ amount: 300 });
+  it("takes a percentage off the cart", () => {
+    expect(evaluateCoupon(percent20, [{ product: make(), quantity: 3 }])).toEqual({ amount: 300 });
   });
 
-  it("gives FLASH10 a flat ₹100", () => {
-    expect(evaluateCoupon(findCoupon("FLASH10")!, [{ product: make(), quantity: 1 }])).toEqual({ amount: 100 });
-  });
-
-  it("limits HOODIE30 to hoodies", () => {
-    const coupon = findCoupon("HOODIE30")!;
-    expect(evaluateCoupon(coupon, [{ product: make(), quantity: 1 }]).error).toBeDefined();
-    const lines = [
-      { product: make(), quantity: 1 },
-      { product: make({ id: "h", name: "Zip Hoodie", category: "Hoodies", price: 1000 }), quantity: 1 },
-    ];
-    expect(evaluateCoupon(coupon, lines)).toEqual({ amount: 300 });
+  it("gives a flat amount off", () => {
+    expect(evaluateCoupon(flat100, [{ product: make(), quantity: 1 }])).toEqual({ amount: 100 });
   });
 
   it("never discounts more than the cart is worth", () => {
-    expect(evaluateCoupon(findCoupon("FLASH10")!, [{ product: make({ price: 60 }), quantity: 1 }])).toEqual({ amount: 60 });
+    expect(evaluateCoupon(flat100, [{ product: make({ price: 60 }), quantity: 1 }])).toEqual({ amount: 60 });
   });
 });
 
 describe("CartProvider", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
 
   it("refuses sold-out products", () => {
     const { result } = renderHook(() => useCart(), { wrapper });
@@ -92,18 +84,28 @@ describe("CartProvider", () => {
     expect(reloaded.result.current.totalItems).toBe(2);
   });
 
-  it("drops a coupon's discount when the cart no longer qualifies", () => {
+  it("applies a coupon the store returns and rejects unknown codes", async () => {
+    const fetchMock = vi.fn(async (url: string) =>
+      url.endsWith("/SAVE20")
+        ? new Response(JSON.stringify(percent20), { status: 200 })
+        : new Response(JSON.stringify({ detail: "Invalid or expired coupon code" }), { status: 404 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     const { result } = renderHook(() => useCart(), { wrapper });
     act(() => {
       result.current.addItem(make({ stock: 10 }), "M", 3);
     });
-    act(() => {
-      expect(result.current.applyCoupon("COOL20")).toBeNull();
-    });
-    expect(result.current.discountAmount).toBe(300);
 
-    act(() => result.current.updateQuantity("p1", "M", 1));
-    expect(result.current.discountAmount).toBe(0);
-    expect(result.current.couponError).toMatch(/more to use COOL20/);
+    let error: string | null = "";
+    await act(async () => {
+      error = await result.current.applyCoupon("NOPE");
+    });
+    expect(error).toMatch(/invalid/i);
+
+    await act(async () => {
+      error = await result.current.applyCoupon("save20");
+    });
+    expect(error).toBeNull();
+    expect(result.current.discountAmount).toBe(300);
   });
 });

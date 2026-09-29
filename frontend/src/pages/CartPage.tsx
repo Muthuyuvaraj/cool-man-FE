@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Minus, Plus, ShoppingBag, Tag, X, ArrowRight, PackageOpen } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { COUPONS } from "@/data/coupons";
+import { fetchCoupons } from "@/lib/api";
 import { formatPrice } from "@/lib/product";
 
 export default function CartPage() {
@@ -15,9 +16,14 @@ export default function CartPage() {
 
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
+  const [applying, setApplying] = useState(false);
+  const { data: coupons = [] } = useQuery({ queryKey: ["coupons"], queryFn: fetchCoupons, staleTime: 30_000, retry: false });
 
-  const handleApplyCoupon = () => {
-    const err = applyCoupon(couponInput);
+  const handleApplyCoupon = async () => {
+    if (applying) return;
+    setApplying(true);
+    const err = await applyCoupon(couponInput);
+    setApplying(false);
     if (err) {
       setCouponError(err);
     } else {
@@ -184,14 +190,15 @@ export default function CartPage() {
                     />
                     <button
                       onClick={handleApplyCoupon}
+                      disabled={applying}
                       className="rounded-xl bg-secondary px-4 py-2.5 text-sm font-bold text-secondary-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
                     >
-                      Apply
+                      {applying ? "Checking..." : "Apply"}
                     </button>
                   </div>
                   {couponError && <p className="mt-2 text-xs text-destructive">{couponError}</p>}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {COUPONS.map((c) => (
+                  {coupons.length > 0 && <div className="mt-3 flex flex-wrap gap-1.5">
+                    {coupons.map((c) => (
                       <button
                         key={c.code}
                         type="button"
@@ -201,7 +208,7 @@ export default function CartPage() {
                         {c.code}
                       </button>
                     ))}
-                  </div>
+                  </div>}
                 </div>
               )}
             </div>
