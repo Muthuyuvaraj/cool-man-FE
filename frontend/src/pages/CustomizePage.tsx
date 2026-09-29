@@ -41,6 +41,12 @@ const FONTS = [
   "Trebuchet MS",
 ];
 
+/** CSS font stack with a generic fallback, so phones without e.g. Impact still show a close match. */
+function fontStack(font: string) {
+  const generic = font === "Georgia" ? "serif" : font === "Courier New" ? "monospace" : font === "Comic Sans MS" ? "cursive" : "sans-serif";
+  return `"${font}", ${generic}`;
+}
+
 const TEXT_COLORS = [
   { name: "White", value: "#ffffff" },
   { name: "Black", value: "#141414" },
@@ -123,7 +129,7 @@ async function renderDesign(spec: DesignSpec): Promise<string> {
   }
 
   const fontPx = spec.fontSize * scale;
-  ctx.font = `${spec.isItalic ? "italic " : ""}${spec.isBold ? 700 : 400} ${fontPx}px "${spec.font}", sans-serif`;
+  ctx.font = `${spec.isItalic ? "italic " : ""}${spec.isBold ? 700 : 400} ${fontPx}px ${fontStack(spec.font)}`;
   const lines: string[] = [];
   if (spec.text) {
     let line = "";
@@ -342,7 +348,7 @@ export default function CustomizePage() {
                         className="w-full break-words leading-tight"
                         style={{
                           color: textColor.value,
-                          fontFamily: font,
+                          fontFamily: fontStack(font),
                           fontSize: `${fontSize}px`,
                           fontWeight: isBold ? 700 : 400,
                           fontStyle: isItalic ? "italic" : "normal",
@@ -585,10 +591,10 @@ export default function CustomizePage() {
                         value={font}
                         onChange={(e) => setFont(e.target.value)}
                         className="w-full appearance-none rounded-xl border border-border bg-surface-sunken px-4 py-3 pr-10 text-sm font-medium text-card-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                        style={{ fontFamily: font }}
+                        style={{ fontFamily: fontStack(font) }}
                       >
                         {FONTS.map((f) => (
-                          <option key={f} value={f} style={{ fontFamily: f }}>
+                          <option key={f} value={f} style={{ fontFamily: fontStack(f) }}>
                             {f}
                           </option>
                         ))}

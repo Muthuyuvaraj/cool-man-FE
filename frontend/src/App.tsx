@@ -1,8 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import { MotionConfig, motion } from "framer-motion";
 import { CartProvider } from "@/contexts/CartContext";
@@ -23,7 +22,7 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin
-import AdminLayout from "./admin/AdminLayout";
+const AdminLayout = lazy(() => import("./admin/AdminLayout"));
 const DashboardPage = lazy(() => import("./admin/pages/DashboardPage"));
 const AdminProductsPage = lazy(() => import("./admin/pages/AdminProductsPage"));
 const AdminOrdersPage = lazy(() => import("./admin/pages/AdminOrdersPage"));
@@ -33,7 +32,12 @@ const AdminPaymentsPage = lazy(() => import("./admin/pages/AdminPaymentsPage"));
 const AdminAnalyticsPage = lazy(() => import("./admin/pages/AdminAnalyticsPage"));
 const AdminSettingsPage = lazy(() => import("./admin/pages/AdminSettingsPage"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  // Admin pages poll on their own interval; don't refetch everything on every tab switch.
+  defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } },
+});
+
+const pageFallback = <div className="min-h-screen bg-background" aria-busy="true" />;
 
 function StoreLayout() {
   const location = useLocation();
@@ -52,6 +56,7 @@ function StoreLayout() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         className="min-h-screen"
       >
+        <Suspense fallback={pageFallback}>
         <Routes location={location}>
           <Route path="/" element={<Index />} />
           <Route path="/shop" element={<ShopPage />} />
@@ -65,6 +70,7 @@ function StoreLayout() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </motion.main>
       <Footer />
     </>
@@ -78,10 +84,9 @@ const App = () => (
         <AccountProvider>
           <WishlistProvider>
             <Toaster />
-            <Sonner />
             <MotionConfig reducedMotion="user">
             <BrowserRouter>
-              <Suspense fallback={<div className="min-h-screen bg-background" aria-busy="true" />}>
+              <Suspense fallback={pageFallback}>
                 <Routes>
                   {/* Admin routes — separate layout, no Navbar/Footer */}
                   <Route path="/admin-dashboard" element={<AdminLayout />}>
@@ -94,6 +99,8 @@ const App = () => (
                     <Route path="analytics" element={<AdminAnalyticsPage />} />
                     <Route path="settings" element={<AdminSettingsPage />} />
                   </Route>
+
+                  <Route path="/admin" element={<Navigate to="/admin-dashboard" replace />} />
 
                   {/* Store routes */}
                   <Route path="/*" element={<StoreLayout />} />
