@@ -36,7 +36,7 @@ export default function ProfilePage() {
     refetchInterval: 15000,
   });
 
-  // Came here from checkout: go straight back once signed in.
+  // Came here from another page: go straight back once signed in.
   useEffect(() => {
     if (account && redirect?.startsWith("/")) navigate(redirect, { replace: true });
   }, [account, redirect, navigate]);
@@ -138,7 +138,7 @@ export default function ProfilePage() {
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary"><UserRound size={26} /></div>
         <h1 className="text-center font-display text-3xl font-bold">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          {redirect ? "Sign in to continue to checkout." : "Track orders and check out faster."}
+          {redirect ? "Sign in to continue." : "Track orders and check out faster."}
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-1 rounded-full bg-secondary p-1">

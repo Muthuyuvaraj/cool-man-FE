@@ -14,7 +14,8 @@ export type AdminProduct = Product & {
 
 export type OrderInput = {
   customerName: string;
-  customerEmail: string;
+  /** Optional: guests order without an account. */
+  customerEmail?: string;
   phone: string;
   address: string;
   items: { productId: string; name: string; size: string; quantity: number; price: number; image?: string; artworkUrl?: string }[];
@@ -23,9 +24,12 @@ export type OrderInput = {
   discount: number;
   total: number;
   couponCode?: string;
+  /** References from prepareWhatsAppOrder, so the saved order matches the WhatsApp message. */
+  orderId?: string;
+  trackingId?: string;
 };
 
-export type CreatedOrder = OrderInput & { orderId: string; trackingId: string; status: string; paymentStatus: string; createdAt?: string; whatsappUrl?: string };
+export type CreatedOrder = OrderInput & { orderId: string; trackingId: string; status: string; paymentStatus: string; createdAt?: string };
 export type AdminOrder = CreatedOrder & { trackingId?: string; createdAt?: string };
 export type AdminCustomer = { name: string; email: string; phone: string; totalOrders: number; totalSpent: number; status: string; createdAt?: string };
 export type AdminCoupon = { code: string; discountType: string; discountValue: number; expiryDate: string; usageLimit: number; usedCount: number; active: boolean };
@@ -72,6 +76,13 @@ export function updateProduct(productId: string, changes: Partial<AdminProduct>)
 
 export function deleteProduct(productId: string) {
   return request<void>(`/api/admin/products/${productId}`, { method: "DELETE" });
+}
+
+export type PreparedWhatsAppOrder = { orderId: string; trackingId: string; whatsappUrl: string };
+
+/** Checks the order and returns the WhatsApp link with it filled in. Nothing is saved until createOrder. */
+export function prepareWhatsAppOrder(order: OrderInput) {
+  return request<PreparedWhatsAppOrder>("/api/orders/whatsapp-message", { method: "POST", body: JSON.stringify(order) });
 }
 
 export function createOrder(order: OrderInput) {

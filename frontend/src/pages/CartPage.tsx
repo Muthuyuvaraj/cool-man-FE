@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Minus, Plus, ShoppingBag, Tag, X, ArrowRight, PackageOpen } from "lucide-react";
+import { Trash2, Minus, Plus, ShoppingBag, Tag, X, PackageOpen, Loader2, MessageCircle } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { fetchCoupons } from "@/lib/api";
+import { useAccount } from "@/contexts/AccountContext";
+import { fetchCoupons, prepareWhatsAppOrder, type OrderInput } from "@/lib/api";
 import { formatPrice } from "@/lib/product";
+import { openPendingWindow, readPendingOrder, savePendingOrder, whatsAppImage } from "@/lib/whatsappOrder";
+
+const inputClass =
+  "mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary";
 
 export default function CartPage() {
   const {
@@ -13,6 +18,23 @@ export default function CartPage() {
     subtotal, appliedCoupon, applyCoupon, removeCoupon,
     discountAmount, total, totalItems, couponError: appliedCouponError,
   } = useCart();
+
+  const { account } = useAccount();
+  const navigate = useNavigate();
+  // Prefill from an order sent earlier but not confirmed, then from the signed-in account.
+  const [details, setDetails] = useState(() => {
+    const previous = readPendingOrder()?.order;
+    return {
+      name: previous?.customerName ?? account?.name ?? "",
+      phone: previous?.phone ?? account?.phone ?? "",
+      address: previous?.address ?? "",
+      email: previous?.customerEmail ?? account?.email ?? "",
+    };
+  });
+  const [orderError, setOrderError] = useState("");
+  const [sending, setSending] = useState(false);
+  const setDetail = (field: keyof typeof details) => (event: { target: { value: string } }) =>
+    setDetails((current) => ({ ...current, [field]: event.target.value }));
 
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
@@ -34,6 +56,60 @@ export default function CartPage() {
 
   const deliveryFee = subtotal >= 999 ? 0 : 79;
   const grandTotal = total + deliveryFee;
+
+  const sendOnWhatsApp = async (event: FormEvent) => {
+    event.preventDefault();
+    if (sending) return;
+    if (details.phone.replace(/\D/g, "").length < 10) {
+      setOrderError("Enter a valid 10-digit phone number.");
+      return;
+    }
+    setOrderError("");
+    setSending(true);
+    // Open the WhatsApp tab now, while we still have the click — browsers block pop-ups opened after a network wait.
+    const whatsappWindow = openPendingWindow();
+    try {
+      const order: OrderInput = {
+        customerName: details.name.trim(),
+        customerEmail: details.email.trim() || undefined,
+        phone: details.phone.trim(),
+        address: details.address.trim(),
+        items: items.map(({ product, size, quantity }) => ({
+          productId: product.id,
+          name: product.name,
+          size,
+          quantity,
+          price: product.price,
+          artworkUrl: product.artworkUrl,
+        })),
+        subtotal,
+        deliveryFee,
+        discount: discountAmount,
+        total: grandTotal,
+        couponCode: discountAmount > 0 ? appliedCoupon?.code : undefined,
+      };
+      const images = await Promise.all(items.map(({ product }) => whatsAppImage(product.image)));
+      const prepared = await prepareWhatsAppOrder({ ...order, items: order.items.map((item, index) => ({ ...item, image: images[index] })) });
+      savePendingOrder({ ...prepared, order, thumbnails: items.map(({ product }) => product.image) });
+      let whatsappOpened = false;
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.href = prepared.whatsappUrl;
+        whatsappOpened = true;
+      }
+      navigate("/confirm-order", { state: { whatsappOpened } });
+    } catch (requestError) {
+      whatsappWindow?.close();
+      setOrderError(
+        requestError instanceof TypeError
+          ? "We couldn't reach the store right now. Please try again in a moment."
+          : requestError instanceof Error
+            ? requestError.message
+            : "Could not prepare your order.",
+      );
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (items.length === 0) {
     return (
@@ -242,13 +318,54 @@ export default function CartPage() {
               <span className="font-display text-2xl font-bold">{formatPrice(grandTotal)}</span>
             </div>
 
-            {/* Checkout Button */}
-            <Link
-              to="/checkout"
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow"
-            >
-              Proceed to Checkout <ArrowRight size={16} />
-            </Link>
+            {/* Delivery details, then WhatsApp */}
+            <form onSubmit={sendOnWhatsApp} className="mt-6 space-y-3 border-t border-border/50 pt-5">
+              <h3 className="font-display text-base font-bold">Delivery details</h3>
+              <label className="block text-xs font-semibold">
+                Full name
+                <input required autoComplete="name" value={details.name} onChange={setDetail("name")} className={inputClass} />
+              </label>
+              <label className="block text-xs font-semibold">
+                Phone
+                <input
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="10-digit mobile number"
+                  value={details.phone}
+                  onChange={setDetail("phone")}
+                  className={inputClass}
+                />
+              </label>
+              <label className="block text-xs font-semibold">
+                Delivery address
+                <textarea
+                  required
+                  minLength={10}
+                  autoComplete="street-address"
+                  placeholder="House no., street, area, city, PIN code"
+                  value={details.address}
+                  onChange={setDetail("address")}
+                  className={`${inputClass} min-h-20 resize-y`}
+                />
+              </label>
+              <label className="block text-xs font-semibold">
+                Email <span className="font-normal text-muted-foreground">(optional, to see this order in your profile)</span>
+                <input type="email" autoComplete="email" value={details.email} onChange={setDetail("email")} className={inputClass} />
+              </label>
+              {orderError && <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{orderError}</p>}
+              <button
+                disabled={sending}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 text-sm font-semibold text-white transition-all hover:brightness-95 disabled:cursor-wait disabled:opacity-70"
+              >
+                {sending ? <Loader2 size={16} className="animate-spin" /> : <MessageCircle size={16} />}
+                {sending ? "Opening WhatsApp…" : "Send order on WhatsApp"}
+              </button>
+              <p className="text-center text-xs text-muted-foreground">
+                WhatsApp opens with your order filled in. Tap Send, then come back here to confirm your order.
+              </p>
+            </form>
 
             <Link
               to="/shop"

@@ -18,7 +18,7 @@ const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const WishlistPage = lazy(() => import("./pages/WishlistPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const ConfirmOrderPage = lazy(() => import("./pages/ConfirmOrderPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Admin
@@ -65,7 +65,9 @@ function StoreLayout() {
           <Route path="/track" element={<TrackOrderPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/confirm-order" element={<ConfirmOrderPage />} />
+          {/* Ordering now happens from the cart; keep old links working. */}
+          <Route path="/checkout" element={<Navigate to="/cart" replace />} />
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<NotFound />} />
