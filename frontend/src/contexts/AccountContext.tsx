@@ -61,7 +61,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   const signIn = (email: string, password: string) => {
     const saved = loadAccounts()[email.trim().toLowerCase()];
-    if (!saved || saved.password !== password) return "Incorrect email or password. Create an account first if you are new here.";
+    if (!saved || saved.password !== password) return "Incorrect email or password.";
     setAccount(saved);
     return null;
   };

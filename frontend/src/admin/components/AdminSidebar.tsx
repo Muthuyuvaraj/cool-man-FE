@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, ShoppingCart, Users, Tag, CreditCard, BarChart3, Settings, ChevronLeft,
+  LayoutDashboard, Package, ShoppingCart, Tag, CreditCard, BarChart3, Settings, ChevronLeft,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -12,7 +12,6 @@ const menuItems = [
   { title: "Dashboard", url: "/admin-dashboard", icon: LayoutDashboard },
   { title: "Products", url: "/admin-dashboard/products", icon: Package },
   { title: "Orders", url: "/admin-dashboard/orders", icon: ShoppingCart },
-  { title: "Customers", url: "/admin-dashboard/customers", icon: Users },
   { title: "Coupons", url: "/admin-dashboard/coupons", icon: Tag },
   { title: "Payments", url: "/admin-dashboard/payments", icon: CreditCard },
   { title: "Analytics", url: "/admin-dashboard/analytics", icon: BarChart3 },

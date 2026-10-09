@@ -19,14 +19,11 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function ProfilePage() {
-  const { account, signUp, signIn, signOut } = useAccount();
+  const { account, signIn, signOut } = useAccount();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const redirect = params.get("redirect");
-  const [mode, setMode] = useState<"signup" | "signin">("signup");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const ordersQuery = useQuery({
@@ -43,7 +40,7 @@ export default function ProfilePage() {
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const result = mode === "signup" ? signUp({ name, email, phone, password }) : signIn(email, password);
+    const result = signIn(email, password);
     setError(result || "");
   };
 
@@ -136,35 +133,16 @@ export default function ProfilePage() {
     <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-16">
       <form onSubmit={submit} className="w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-card sm:p-10">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary"><UserRound size={26} /></div>
-        <h1 className="text-center font-display text-3xl font-bold">{mode === "signup" ? "Create your account" : "Welcome back"}</h1>
+        <h1 className="text-center font-display text-3xl font-bold">Welcome back</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
           {redirect ? "Sign in to continue." : "Track orders and check out faster."}
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-1 rounded-full bg-secondary p-1">
-          {(["signup", "signin"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => { setMode(m); setError(""); }}
-              className={`rounded-full py-2 text-sm font-semibold transition-colors ${mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}
-            >
-              {m === "signup" ? "Sign up" : "Sign in"}
-            </button>
-          ))}
-        </div>
-
-        {mode === "signup" && (
-          <label className="mt-6 block text-sm font-semibold">Name<input required autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className={inputClass} /></label>
-        )}
-        <label className="mt-4 block text-sm font-semibold">Email<input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} /></label>
-        {mode === "signup" && (
-          <label className="mt-4 block text-sm font-semibold">Phone<input required type="tel" inputMode="tel" autoComplete="tel" placeholder="10-digit mobile number" value={phone} onChange={(event) => setPhone(event.target.value)} className={inputClass} /></label>
-        )}
-        <label className="mt-4 block text-sm font-semibold">Password<input required type="password" minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} /></label>
+        <label className="mt-6 block text-sm font-semibold">Email<input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className={inputClass} /></label>
+        <label className="mt-4 block text-sm font-semibold">Password<input required type="password" minLength={6} autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} /></label>
         {error && <p className="mt-4 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</p>}
         <button className="mt-6 w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-all hover:shadow-glow">
-          {mode === "signup" ? "Create account" : "Sign in"}
+          Sign in
         </button>
       </form>
     </div>
